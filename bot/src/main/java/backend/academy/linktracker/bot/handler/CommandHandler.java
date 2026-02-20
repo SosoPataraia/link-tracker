@@ -14,9 +14,11 @@ public class CommandHandler {
         if ("/start".equals(messageText)) {
             return new SendMessage(chatId, "Добро пожаловать! Используйте /help, чтобы посмотреть доступные команды.");
         } else if ("/help".equals(messageText)) {
-            return new SendMessage(chatId, "Доступные команды:\n/start - начать работу\n/help - показать список команд");
+            return new SendMessage(
+                    chatId, "Доступные команды:\n/start - начать работу\n/help - показать список команд");
         } else {
-            return new SendMessage(chatId, "Неизвестная команда. Воспользуйтесь /help, чтобы посмотреть список доступных команд.");
+            return new SendMessage(
+                    chatId, "Неизвестная команда. Воспользуйтесь /help, чтобы посмотреть список доступных команд.");
         }
     }
 }
