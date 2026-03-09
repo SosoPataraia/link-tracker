@@ -49,8 +49,8 @@ public class ListCommand implements BotCommand {
 
         if (links.isEmpty()) {
             String emptyMsg = filterTag != null
-                ? "Нет ссылок с тегом \"" + filterTag + "\"."
-                : "Вы не отслеживаете ни одной ссылки.\nДобавьте ссылку командой /track";
+                    ? "Нет ссылок с тегом \"" + filterTag + "\"."
+                    : "Вы не отслеживаете ни одной ссылки.\nДобавьте ссылку командой /track";
             telegramBot.execute(new SendMessage(chatId, emptyMsg));
             return;
         }

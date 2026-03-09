@@ -34,11 +34,14 @@ public class UpdatesController {
     public ResponseEntity<ApiErrorResponse> handleValidationError(MethodArgumentNotValidException ex) {
         log.warn("Validation error: {}", ex.getMessage());
         var error = new ApiErrorResponse(
-            "Invalid request body",
-            "400",
-            ex.getClass().getSimpleName(),
-            ex.getMessage(),
-            Arrays.stream(ex.getStackTrace()).map(StackTraceElement::toString).limit(5).toList());
+                "Invalid request body",
+                "400",
+                ex.getClass().getSimpleName(),
+                ex.getMessage(),
+                Arrays.stream(ex.getStackTrace())
+                        .map(StackTraceElement::toString)
+                        .limit(5)
+                        .toList());
         return ResponseEntity.badRequest().body(error);
     }
 
@@ -46,11 +49,14 @@ public class UpdatesController {
     public ResponseEntity<ApiErrorResponse> handleError(Exception ex) {
         log.error("Unexpected error", ex);
         var error = new ApiErrorResponse(
-            "Internal server error",
-            "500",
-            ex.getClass().getSimpleName(),
-            ex.getMessage(),
-            Arrays.stream(ex.getStackTrace()).map(StackTraceElement::toString).limit(5).toList());
+                "Internal server error",
+                "500",
+                ex.getClass().getSimpleName(),
+                ex.getMessage(),
+                Arrays.stream(ex.getStackTrace())
+                        .map(StackTraceElement::toString)
+                        .limit(5)
+                        .toList());
         return ResponseEntity.internalServerError().body(error);
     }
 }

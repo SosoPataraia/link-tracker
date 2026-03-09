@@ -39,15 +39,13 @@ public class UntrackCommand implements BotCommand {
         // Extract URL from command: /untrack <url>
         String[] parts = text.trim().split("\\s+", 2);
         if (parts.length < 2 || parts[1].isBlank()) {
-            telegramBot.execute(new SendMessage(chatId,
-                "Укажите ссылку: /untrack <ссылка>"));
+            telegramBot.execute(new SendMessage(chatId, "Укажите ссылку: /untrack <ссылка>"));
             return;
         }
         String url = parts[1].trim();
 
         if (!linkRepository.exists(chatId, url)) {
-            telegramBot.execute(new SendMessage(chatId,
-                "Ссылка не найдена в списке отслеживаемых."));
+            telegramBot.execute(new SendMessage(chatId, "Ссылка не найдена в списке отслеживаемых."));
             return;
         }
 
@@ -58,7 +56,6 @@ public class UntrackCommand implements BotCommand {
         }
         linkRepository.remove(chatId, url);
         log.info("Untracked link url={} for chatId={}", url, chatId);
-        telegramBot.execute(new SendMessage(chatId,
-            "✅ Отслеживание ссылки прекращено:\n" + url));
+        telegramBot.execute(new SendMessage(chatId, "✅ Отслеживание ссылки прекращено:\n" + url));
     }
 }

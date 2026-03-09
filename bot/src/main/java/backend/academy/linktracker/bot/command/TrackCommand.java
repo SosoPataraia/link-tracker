@@ -31,9 +31,10 @@ public class TrackCommand implements BotCommand {
         var session = sessionRepository.getOrCreate(chatId);
         session.setState(UserState.WAITING_FOR_LINK);
         session.setPendingUrl(null);
-        telegramBot.execute(new SendMessage(chatId,
-            "Отправьте ссылку для отслеживания.\n"
-                + "Поддерживаются: github.com и stackoverflow.com\n\n"
-                + "Для отмены введите /cancel"));
+        telegramBot.execute(new SendMessage(
+                chatId,
+                "Отправьте ссылку для отслеживания.\n"
+                        + "Поддерживаются: github.com и stackoverflow.com\n\n"
+                        + "Для отмены введите /cancel"));
     }
 }

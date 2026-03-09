@@ -1,0 +1,71 @@
+package backend.academy.linktracker.scrapper;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import backend.academy.linktracker.scrapper.client.GitHubClient;
+import java.time.Instant;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.web.client.RestClient;
+import org.wiremock.spring.EnableWireMock;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@ActiveProfiles("test")
+@EnableWireMock
+class GitHubClientTest {
+
+    @Test
+    void getLastUpdated_parsesDateCorrectly(
+            @org.wiremock.spring.InjectWireMock com.github.tomakehurst.wiremock.WireMockServer wireMock) {
+        stubFor(get(urlPathEqualTo("/repos/user/repo"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("""
+                                {
+                                  "full_name": "user/repo",
+                                  "pushed_at": "2024-01-15T10:30:00Z",
+                                  "updated_at": "2024-01-15T10:30:00Z"
+                                }
+                                """)));
+
+        var restClient = RestClient.builder().baseUrl(wireMock.baseUrl()).build();
+        var client = new GitHubClient(restClient);
+
+        Instant result = client.getLastUpdated("user", "repo");
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(Instant.parse("2024-01-15T10:30:00Z"));
+    }
+
+    @Test
+    void getLastUpdated_handlesErrorGracefully(
+            @org.wiremock.spring.InjectWireMock com.github.tomakehurst.wiremock.WireMockServer wireMock) {
+        stubFor(get(urlPathEqualTo("/repos/user/repo")).willReturn(aResponse().withStatus(500)));
+
+        var restClient = RestClient.builder().baseUrl(wireMock.baseUrl()).build();
+        var client = new GitHubClient(restClient);
+
+        Instant result = client.getLastUpdated("user", "repo");
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void getLastUpdated_handles404Gracefully(
+            @org.wiremock.spring.InjectWireMock com.github.tomakehurst.wiremock.WireMockServer wireMock) {
+        stubFor(get(urlPathEqualTo("/repos/user/repo"))
+                .willReturn(aResponse().withStatus(404).withBody("{\"message\": \"Not Found\"}")));
+
+        var restClient = RestClient.builder().baseUrl(wireMock.baseUrl()).build();
+        var client = new GitHubClient(restClient);
+
+        Instant result = client.getLastUpdated("user", "repo");
+        assertThat(result).isNull();
+    }
+}

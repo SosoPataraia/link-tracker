@@ -20,14 +20,14 @@ public class InMemoryLinkRepository {
 
     public List<TrackedLink> findByChatAndTag(long chatId, String tag) {
         return storage.getOrDefault(chatId, new ArrayList<>()).stream()
-            .filter(link -> link.getTags().contains(tag))
-            .toList();
+                .filter(link -> link.getTags().contains(tag))
+                .toList();
     }
 
     public Optional<TrackedLink> findByChatAndUrl(long chatId, String url) {
         return storage.getOrDefault(chatId, new ArrayList<>()).stream()
-            .filter(link -> link.getUrl().equals(url))
-            .findFirst();
+                .filter(link -> link.getUrl().equals(url))
+                .findFirst();
     }
 
     public TrackedLink save(long chatId, TrackedLink link) {
@@ -48,7 +48,7 @@ public class InMemoryLinkRepository {
 
     public boolean exists(long chatId, String url) {
         return storage.getOrDefault(chatId, new ArrayList<>()).stream()
-            .anyMatch(l -> l.getUrl().equals(url));
+                .anyMatch(l -> l.getUrl().equals(url));
     }
 
     public Map<Long, List<TrackedLink>> findAll() {

@@ -11,3 +11,7 @@ app:
     access-token: ${STACKOVERFLOW_ACCESS_KEY} # Use env variable. DO NOT KEEP TOKEN HERE
   github:
     token: ${GITHUB_TOKEN} # Use env variable. DO NOT KEEP TOKEN HERE
+  bot:
+    base-url: ${BOT_BASE_URL:http://localhost:8080}
+  scheduler:
+    interval: 60000

@@ -27,12 +27,12 @@ public class StartCommand implements BotCommand {
         long chatId = update.message().chat().id();
         String firstName = update.message().from().firstName();
         String text = "Привет, " + firstName + "! \uD83D\uDC4B\n\n"
-            + "Я бот для отслеживания изменений на веб-страницах.\n\n"
-            + "Доступные команды:\n"
-            + "/track — начать отслеживание ссылки\n"
-            + "/untrack — прекратить отслеживание ссылки\n"
-            + "/list — список отслеживаемых ссылок\n"
-            + "/help — справка";
+                + "Я бот для отслеживания изменений на веб-страницах.\n\n"
+                + "Доступные команды:\n"
+                + "/track — начать отслеживание ссылки\n"
+                + "/untrack — прекратить отслеживание ссылки\n"
+                + "/list — список отслеживаемых ссылок\n"
+                + "/help — справка";
         telegramBot.execute(new SendMessage(chatId, text));
     }
 }
