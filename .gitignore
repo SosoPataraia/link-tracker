@@ -53,4 +53,9 @@ build/
 .DS_Store
 
 .env
+<<<<<<< HEAD
 .env.*
+=======
+.env*
+**/.env*
+>>>>>>> ef8bc00b69412a3edec9dd7a781f931798749120
