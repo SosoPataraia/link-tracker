@@ -4,3 +4,4 @@ app:
     url: ${wiremock.server.baseUrl}/bot
     update-listener-sleep: 100
     debug: false
+    auto-start-listener: false

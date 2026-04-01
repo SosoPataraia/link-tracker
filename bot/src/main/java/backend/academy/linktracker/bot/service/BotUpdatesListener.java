@@ -9,7 +9,6 @@ import jakarta.annotation.PostConstruct;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -19,9 +18,7 @@ public class BotUpdatesListener implements UpdatesListener {
 
     private final TelegramBot telegramBot;
     private final CommandHandler commandHandler;
-
-    @Autowired
-    private TelegramProperties properties;
+    private final TelegramProperties properties;
 
     @PostConstruct
     public void init() {
