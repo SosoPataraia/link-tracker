@@ -1,7 +1,6 @@
 app:
   telegram:
     token: test-token-12345
-    url: ${wiremock.server.baseUrl}/
+    url: ${wiremock.server.baseUrl}/bot
     update-listener-sleep: 100
     debug: false
-    auto-start-listener: false
