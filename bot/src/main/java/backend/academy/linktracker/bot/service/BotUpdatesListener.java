@@ -38,7 +38,7 @@ public class BotUpdatesListener implements UpdatesListener {
         for (Update update : updates) {
             processUpdate(update);
         }
-        return UpdatesListener.CONFIRMED_UPDATES_ALL;
+        return CONFIRMED_UPDATES_ALL;
     }
 
     private void processUpdate(Update update) {

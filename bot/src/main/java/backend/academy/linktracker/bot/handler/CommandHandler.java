@@ -13,21 +13,21 @@ public class CommandHandler {
         String text = update.message().text();
         long chatId = update.message().chat().id();
 
-        log.info("Handling command", "chatId", chatId, "command", text);
+        log.info("Handling command chatId={} command={}", chatId, text);
 
         return switch (text) {
             case "/start" -> {
-                log.info("Processing /start", "chatId", chatId);
+                log.info("Processing /start chatId={}", chatId);
                 yield new SendMessage(
                         chatId, "Добро пожаловать! Используйте /help, чтобы посмотреть доступные команды.");
             }
             case "/help" -> {
-                log.info("Processing /help", "chatId", chatId);
+                log.info("Processing /help chatId={}", chatId);
                 yield new SendMessage(
                         chatId, "Доступные команды:\n/start — начать работу\n/help — показать список команд");
             }
             default -> {
-                log.warn("Unknown command", "chatId", chatId, "command", text);
+                log.warn("Unknown command chatId={} command={}", chatId, text);
                 yield new SendMessage(
                         chatId, "Неизвестная команда. Воспользуйтесь /help, чтобы посмотреть список доступных команд.");
             }
