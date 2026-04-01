@@ -17,21 +17,25 @@ public class BotCommandsRegistrar {
 
     @PostConstruct
     public void registerCommands() {
-        var commands = new BotCommand[] {
-            new BotCommand("start", "Начать работу с ботом"),
-            new BotCommand("help", "Показать список доступных команд")
-        };
+        try {
+            var commands = new BotCommand[] {
+                new BotCommand("start", "Начать работу с ботом"),
+                new BotCommand("help", "Показать список доступных команд")
+            };
 
-        var request = new SetMyCommands(commands);
-        var response = telegramBot.execute(request);
+            var request = new SetMyCommands(commands);
+            var response = telegramBot.execute(request);
 
-        if (response.isOk()) {
-            log.info("Bot commands registered successfully",
-                "commandCount", commands.length);
-        } else {
-            log.error("Failed to register bot commands",
-                "errorCode", response.errorCode(),
-                "description", response.description());
+            if (response.isOk()) {
+                log.info("Bot commands registered successfully");
+            } else {
+                log.error(
+                        "Failed to register bot commands: errorCode={} description={}",
+                        response.errorCode(),
+                        response.description());
+            }
+        } catch (Exception e) {
+            log.error("Failed to register bot commands", e);
         }
     }
 }

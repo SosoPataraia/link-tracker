@@ -10,11 +10,13 @@ public class TelegramConfiguration {
 
     @Bean
     public TelegramBot telegramBot(TelegramProperties properties) {
-        System.out.println(">>> Telegram URL    : '" + properties.getUrl() + "'");
-        System.out.println(">>> Telegram Token  : '" + properties.getToken() + "'");
         var builder = new TelegramBot.Builder(properties.getToken())
-                .apiUrl(properties.getUrl())
                 .updateListenerSleep(properties.getUpdateListenerSleep().toMillis());
+
+        String url = properties.getUrl();
+        if (url != null && !url.isBlank() && !url.equals("https://api.telegram.org/")) {
+            builder.apiUrl(url);
+        }
 
         if (properties.isDebug()) {
             builder.debug();

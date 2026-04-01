@@ -1,5 +1,8 @@
 package backend.academy.linktracker.bot.handler;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
+
 import com.pengrad.telegrambot.model.Chat;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
@@ -9,9 +12,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CommandHandlerTest {
@@ -44,8 +44,7 @@ class CommandHandlerTest {
         SendMessage response = commandHandler.handleCommand(update);
 
         assertThat(response).isNotNull();
-        assertThat(getResponseText(response))
-            .containsIgnoringCase("Добро пожаловать");
+        assertThat(getResponseText(response)).containsIgnoringCase("Добро пожаловать");
     }
 
     @Test
@@ -55,9 +54,7 @@ class CommandHandlerTest {
         SendMessage response = commandHandler.handleCommand(update);
 
         assertThat(response).isNotNull();
-        assertThat(getResponseText(response))
-            .contains("/start")
-            .contains("/help");
+        assertThat(getResponseText(response)).contains("/start").contains("/help");
     }
 
     @Test
@@ -67,8 +64,7 @@ class CommandHandlerTest {
         SendMessage response = commandHandler.handleCommand(update);
 
         assertThat(response).isNotNull();
-        assertThat(getResponseText(response))
-            .containsIgnoringCase("Неизвестная команда");
+        assertThat(getResponseText(response)).containsIgnoringCase("Неизвестная команда");
     }
 
     @Test
@@ -78,8 +74,7 @@ class CommandHandlerTest {
         SendMessage response = commandHandler.handleCommand(update);
 
         assertThat(response).isNotNull();
-        assertThat(getResponseText(response))
-            .containsIgnoringCase("Неизвестная команда");
+        assertThat(getResponseText(response)).containsIgnoringCase("Неизвестная команда");
     }
 
     private String getResponseText(SendMessage sendMessage) {
