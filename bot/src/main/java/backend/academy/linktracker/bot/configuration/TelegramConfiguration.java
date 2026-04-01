@@ -13,11 +13,10 @@ public class TelegramConfiguration {
         String url = properties.getUrl();
 
         var builder = new TelegramBot.Builder(properties.getToken())
-            .updateListenerSleep(properties.getUpdateListenerSleep().toMillis());
+                .updateListenerSleep(properties.getUpdateListenerSleep().toMillis());
 
         if (url != null && !url.isBlank() && !url.equals("https://api.telegram.org/")) {
-            String apiUrl = url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
-            builder.apiUrl(apiUrl);
+            builder.apiUrl(url);
         }
 
         if (properties.isDebug()) {
