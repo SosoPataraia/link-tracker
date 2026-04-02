@@ -3,10 +3,14 @@ package backend.academy.linktracker.bot.handler;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import backend.academy.linktracker.bot.command.HelpCommand;
+import backend.academy.linktracker.bot.command.StartCommand;
+import backend.academy.linktracker.bot.command.UnknownCommand;
 import com.pengrad.telegrambot.model.Chat;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,7 +35,10 @@ class CommandHandlerTest {
 
     @BeforeEach
     void setUp() {
-        commandHandler = new CommandHandler();
+        var startCommand = new StartCommand();
+        var helpCommand = new HelpCommand();
+        var unknownCommand = new UnknownCommand();
+        commandHandler = new CommandHandler(List.of(startCommand, helpCommand, unknownCommand), unknownCommand);
         when(update.message()).thenReturn(message);
         when(message.chat()).thenReturn(chat);
         when(chat.id()).thenReturn(CHAT_ID);
