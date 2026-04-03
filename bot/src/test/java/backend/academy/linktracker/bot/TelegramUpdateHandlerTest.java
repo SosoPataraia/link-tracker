@@ -155,7 +155,7 @@ class TelegramUpdateHandlerTest {
     }
 
     private void sendUpdate(long chatId, String text) {
-        handler.processUpdate(mockUpdate(chatId, text));
+        handler.handleUpdate(mockUpdate(chatId, text));
     }
 
     private Update mockUpdate(long chatId, String text) {

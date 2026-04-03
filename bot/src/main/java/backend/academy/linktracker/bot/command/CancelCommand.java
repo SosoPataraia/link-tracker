@@ -1,8 +1,8 @@
 package backend.academy.linktracker.bot.command;
 
+import backend.academy.linktracker.bot.dto.BotUpdate;
 import backend.academy.linktracker.bot.repository.SessionRepository;
 import com.pengrad.telegrambot.TelegramBot;
-import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -25,9 +25,8 @@ public class CancelCommand implements BotCommand {
     }
 
     @Override
-    public void handle(Update update) {
-        long chatId = update.message().chat().id();
-        sessionRepository.getOrCreate(chatId).reset();
-        telegramBot.execute(new SendMessage(chatId, "Операция отменена."));
+    public void handle(BotUpdate update) {
+        sessionRepository.getOrCreate(update.getChatId()).reset();
+        telegramBot.execute(new SendMessage(update.getChatId(), "Операция отменена."));
     }
 }

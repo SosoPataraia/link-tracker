@@ -1,10 +1,10 @@
 package backend.academy.linktracker.bot.command;
 
 import backend.academy.linktracker.bot.client.ScrapperClient;
+import backend.academy.linktracker.bot.dto.BotUpdate;
 import backend.academy.linktracker.bot.dto.LinkResponse;
 import backend.academy.linktracker.bot.repository.SessionRepository;
 import com.pengrad.telegrambot.TelegramBot;
-import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -29,9 +29,9 @@ public class ListCommand implements BotCommand {
     }
 
     @Override
-    public void handle(Update update) {
-        long chatId = update.message().chat().id();
-        String text = update.message().text();
+    public void handle(BotUpdate update) {
+        long chatId = update.getChatId();
+        String text = update.getText();
         sessionRepository.getOrCreate(chatId).reset();
 
         String[] parts = text.trim().split("\\s+", 2);

@@ -1,7 +1,7 @@
 package backend.academy.linktracker.bot.command;
 
+import backend.academy.linktracker.bot.dto.BotUpdate;
 import com.pengrad.telegrambot.TelegramBot;
-import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,8 +26,7 @@ public class HelpCommand implements BotCommand {
     }
 
     @Override
-    public void handle(Update update) {
-        long chatId = update.message().chat().id();
+    public void handle(BotUpdate update) {
         String commandList = commands.stream()
                 .map(cmd -> cmd.command() + " — " + cmd.description())
                 .collect(Collectors.joining("\n"));
@@ -35,6 +34,6 @@ public class HelpCommand implements BotCommand {
                 + "\n\nПоддерживаемые ресурсы:\n"
                 + "• GitHub репозитории (github.com/...)\n"
                 + "• StackOverflow вопросы (stackoverflow.com/questions/...)";
-        telegramBot.execute(new SendMessage(chatId, text));
+        telegramBot.execute(new SendMessage(update.getChatId(), text));
     }
 }

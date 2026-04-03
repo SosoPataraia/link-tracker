@@ -1,5 +1,6 @@
 package backend.academy.linktracker.scrapper.scheduler;
 
+import backend.academy.linktracker.scrapper.properties.SchedulerProperties;
 import backend.academy.linktracker.scrapper.service.LinkCheckerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,10 +15,13 @@ import org.springframework.stereotype.Component;
 public class LinkCheckerScheduler {
 
     private final LinkCheckerService linkCheckerService;
+    private final SchedulerProperties schedulerProperties;
 
     @Scheduled(fixedDelayString = "${app.scheduler.interval:60000}")
     public void checkLinks() {
-        log.info("Scheduler: starting link check");
+        log.atInfo()
+                .addKeyValue("intervalMs", schedulerProperties.getInterval())
+                .log("scheduler.start");
         try {
             linkCheckerService.checkAllLinks();
         } catch (Exception e) {

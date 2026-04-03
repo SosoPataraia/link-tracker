@@ -1,12 +1,11 @@
 package backend.academy.linktracker.bot.command;
 
-import com.pengrad.telegrambot.model.Update;
+import backend.academy.linktracker.bot.dto.BotUpdate;
 
 public interface BotCommand {
-
     String command();
 
     String description();
 
-    void handle(Update update);
+    void handle(BotUpdate update);
 }

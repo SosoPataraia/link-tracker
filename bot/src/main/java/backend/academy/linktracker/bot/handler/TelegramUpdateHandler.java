@@ -2,6 +2,7 @@ package backend.academy.linktracker.bot.handler;
 
 import backend.academy.linktracker.bot.client.ScrapperClient;
 import backend.academy.linktracker.bot.command.BotCommand;
+import backend.academy.linktracker.bot.dto.BotUpdate;
 import backend.academy.linktracker.bot.model.UserSession;
 import backend.academy.linktracker.bot.repository.SessionRepository;
 import backend.academy.linktracker.bot.state.UserState;
@@ -54,21 +55,19 @@ public class TelegramUpdateHandler {
         log.info("Bot started, registered {} commands", commandMap.size());
     }
 
-    public void processUpdate(Update update) {
-        try {
-            handleUpdate(update);
-        } catch (Exception e) {
-            log.error("Error handling update", e);
-        }
-    }
-
-    private void handleUpdate(Update update) {
+    public void handleUpdate(Update update) {
         if (update.message() == null || update.message().text() == null) {
             return;
         }
 
         long chatId = update.message().chat().id();
         String text = update.message().text().trim();
+        String firstName =
+                update.message().from() != null ? update.message().from().firstName() : "";
+        String username =
+                update.message().from() != null ? update.message().from().username() : "";
+
+        BotUpdate botUpdate = new BotUpdate(chatId, text, firstName, username);
         UserSession session = sessionRepository.getOrCreate(chatId);
 
         log.atInfo()
@@ -79,7 +78,6 @@ public class TelegramUpdateHandler {
         if (text.startsWith("/")) {
             String commandKey = text.split("\\s+")[0].toLowerCase();
 
-            // /skip works in WAITING_FOR_TAGS and WAITING_FOR_FILTERS
             if (commandKey.equals("/skip")) {
                 switch (session.getState()) {
                     case WAITING_FOR_TAGS -> handleTagsInput(chatId, "", session);
@@ -94,7 +92,7 @@ public class TelegramUpdateHandler {
                 if (!commandKey.equals("/track") && !commandKey.equals("/cancel")) {
                     session.reset();
                 }
-                cmd.handle(update);
+                cmd.handle(botUpdate);
                 return;
             }
 
@@ -144,10 +142,7 @@ public class TelegramUpdateHandler {
         session.setPendingTags(tags);
         session.setState(UserState.WAITING_FOR_FILTERS);
         telegramBot.execute(new SendMessage(
-                chatId,
-                "Введите фильтры через запятую (необязательно).\n"
-                        + "Например: open, bug\n\n"
-                        + "Или отправьте /skip чтобы пропустить."));
+                chatId, "Введите фильтры через запятую (необязательно).\n" + "Или отправьте /skip чтобы пропустить."));
     }
 
     private void handleFiltersInput(long chatId, String input, UserSession session) {
