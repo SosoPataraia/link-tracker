@@ -6,7 +6,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import backend.academy.linktracker.scrapper.client.GitHubClient;
+import backend.academy.linktracker.scrapper.client.GitHubClientImpl;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,7 +37,7 @@ class GitHubClientTest {
                                 """)));
 
         var restClient = RestClient.builder().baseUrl(wireMock.baseUrl()).build();
-        var client = new GitHubClient(restClient);
+        var client = new GitHubClientImpl(restClient);
 
         Instant result = client.getLastUpdated("user", "repo");
         assertThat(result).isNotNull();
@@ -50,7 +50,7 @@ class GitHubClientTest {
         stubFor(get(urlPathEqualTo("/repos/user/repo")).willReturn(aResponse().withStatus(500)));
 
         var restClient = RestClient.builder().baseUrl(wireMock.baseUrl()).build();
-        var client = new GitHubClient(restClient);
+        var client = new GitHubClientImpl(restClient);
 
         Instant result = client.getLastUpdated("user", "repo");
         assertThat(result).isNull();
@@ -63,7 +63,7 @@ class GitHubClientTest {
                 .willReturn(aResponse().withStatus(404).withBody("{\"message\": \"Not Found\"}")));
 
         var restClient = RestClient.builder().baseUrl(wireMock.baseUrl()).build();
-        var client = new GitHubClient(restClient);
+        var client = new GitHubClientImpl(restClient);
 
         Instant result = client.getLastUpdated("user", "repo");
         assertThat(result).isNull();

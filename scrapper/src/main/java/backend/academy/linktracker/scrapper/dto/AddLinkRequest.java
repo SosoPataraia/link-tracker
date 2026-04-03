@@ -17,4 +17,6 @@ public class AddLinkRequest {
     private String link;
 
     private List<String> tags = List.of();
+
+    private List<String> filters = List.of();
 }

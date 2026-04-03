@@ -1,7 +1,6 @@
 package backend.academy.linktracker.scrapper.controller;
 
 import backend.academy.linktracker.scrapper.dto.AddLinkRequest;
-import backend.academy.linktracker.scrapper.dto.ApiErrorResponse;
 import backend.academy.linktracker.scrapper.dto.LinkResponse;
 import backend.academy.linktracker.scrapper.dto.ListLinksResponse;
 import backend.academy.linktracker.scrapper.dto.RemoveLinkRequest;
@@ -11,14 +10,11 @@ import backend.academy.linktracker.scrapper.repository.InMemoryLinkRepository;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -36,15 +32,9 @@ public class LinksController {
     private final ChatRepository chatRepository;
 
     @GetMapping
-    public ResponseEntity<?> getLinks(@RequestHeader("Tg-Chat-Id") long chatId) {
+    public ResponseEntity<ListLinksResponse> getLinks(@RequestHeader("Tg-Chat-Id") long chatId) {
         if (!chatRepository.exists(chatId)) {
-            return ResponseEntity.status(400)
-                    .body(new ApiErrorResponse(
-                            "Chat not registered",
-                            "400",
-                            "ChatNotFoundException",
-                            "Chat " + chatId + " not found",
-                            List.of()));
+            return ResponseEntity.status(400).body(new ListLinksResponse(List.of(), 0));
         }
         List<TrackedLink> links = linkRepository.findAllByChat(chatId);
         List<LinkResponse> responses = links.stream()
@@ -54,29 +44,15 @@ public class LinksController {
     }
 
     @PostMapping
-    public ResponseEntity<?> addLink(
+    public ResponseEntity<LinkResponse> addLink(
             @RequestHeader("Tg-Chat-Id") long chatId, @Valid @RequestBody AddLinkRequest request) {
 
         if (!chatRepository.exists(chatId)) {
-            return ResponseEntity.status(400)
-                    .body(new ApiErrorResponse(
-                            "Chat not registered",
-                            "400",
-                            "ChatNotFoundException",
-                            "Chat " + chatId + " not found",
-                            List.of()));
+            return ResponseEntity.status(400).build();
         }
-
         if (linkRepository.findByChatAndUrl(chatId, request.getLink()).isPresent()) {
-            return ResponseEntity.status(409)
-                    .body(new ApiErrorResponse(
-                            "Link already tracked",
-                            "409",
-                            "LinkAlreadyExistsException",
-                            "Link already tracked: " + request.getLink(),
-                            List.of()));
+            return ResponseEntity.status(409).build();
         }
-
         var link = new TrackedLink(
                 null,
                 chatId,
@@ -90,47 +66,19 @@ public class LinksController {
     }
 
     @DeleteMapping
-    public ResponseEntity<?> removeLink(
+    public ResponseEntity<LinkResponse> removeLink(
             @RequestHeader("Tg-Chat-Id") long chatId, @Valid @RequestBody RemoveLinkRequest request) {
 
         if (!chatRepository.exists(chatId)) {
-            return ResponseEntity.status(404)
-                    .body(new ApiErrorResponse(
-                            "Chat not found",
-                            "404",
-                            "ChatNotFoundException",
-                            "Chat " + chatId + " not found",
-                            List.of()));
+            return ResponseEntity.status(404).build();
         }
-
         var existing = linkRepository.findByChatAndUrl(chatId, request.getLink());
         if (existing.isEmpty()) {
-            return ResponseEntity.status(404)
-                    .body(new ApiErrorResponse(
-                            "Link not found",
-                            "404",
-                            "LinkNotFoundException",
-                            "Link not found: " + request.getLink(),
-                            List.of()));
+            return ResponseEntity.status(404).build();
         }
-
         linkRepository.remove(chatId, request.getLink());
         log.info("Removed link url={} for chatId={}", request.getLink(), chatId);
         var removed = existing.orElseThrow();
         return ResponseEntity.ok(new LinkResponse(removed.getId(), removed.getUrl(), removed.getTags()));
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiErrorResponse> handleValidationError(MethodArgumentNotValidException ex) {
-        return ResponseEntity.badRequest()
-                .body(new ApiErrorResponse(
-                        "Invalid request",
-                        "400",
-                        ex.getClass().getSimpleName(),
-                        ex.getMessage(),
-                        Arrays.stream(ex.getStackTrace())
-                                .map(StackTraceElement::toString)
-                                .limit(5)
-                                .toList()));
     }
 }

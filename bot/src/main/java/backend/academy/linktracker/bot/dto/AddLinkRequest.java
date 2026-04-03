@@ -13,4 +13,5 @@ import lombok.Setter;
 public class AddLinkRequest {
     private String link;
     private List<String> tags;
+    private List<String> filters;
 }

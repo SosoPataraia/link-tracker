@@ -1,23 +1,9 @@
 package backend.academy.linktracker.scrapper.repository;
 
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import org.springframework.stereotype.Repository;
+public interface ChatRepository {
+    void register(long chatId);
 
-@Repository
-public class ChatRepository {
+    boolean exists(long chatId);
 
-    private final Set<Long> registeredChats = ConcurrentHashMap.newKeySet();
-
-    public void register(long chatId) {
-        registeredChats.add(chatId);
-    }
-
-    public boolean exists(long chatId) {
-        return registeredChats.contains(chatId);
-    }
-
-    public void remove(long chatId) {
-        registeredChats.remove(chatId);
-    }
+    void remove(long chatId);
 }

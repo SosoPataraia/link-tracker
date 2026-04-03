@@ -6,7 +6,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import backend.academy.linktracker.scrapper.client.StackOverflowClient;
+import backend.academy.linktracker.scrapper.client.StackOverflowClientImpl;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
@@ -40,7 +40,7 @@ class StackOverflowClientTest {
                                 }
                                 """)));
 
-        var client = new StackOverflowClient(
+        var client = new StackOverflowClientImpl(
                 RestClient.builder().baseUrl(wireMock.baseUrl()).build());
 
         Instant result = client.getLastActivity(123456L);
@@ -52,7 +52,7 @@ class StackOverflowClientTest {
     void getLastActivity_handlesErrorResponse() {
         stubFor(get(urlPathEqualTo("/questions/999")).willReturn(aResponse().withStatus(503)));
 
-        var client = new StackOverflowClient(
+        var client = new StackOverflowClientImpl(
                 RestClient.builder().baseUrl(wireMock.baseUrl()).build());
 
         Instant result = client.getLastActivity(999L);
@@ -67,7 +67,7 @@ class StackOverflowClientTest {
                         .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                         .withBody("{\"items\": []}")));
 
-        var client = new StackOverflowClient(
+        var client = new StackOverflowClientImpl(
                 RestClient.builder().baseUrl(wireMock.baseUrl()).build());
 
         Instant result = client.getLastActivity(111L);

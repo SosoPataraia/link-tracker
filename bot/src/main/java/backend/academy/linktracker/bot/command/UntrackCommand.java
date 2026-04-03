@@ -1,7 +1,6 @@
 package backend.academy.linktracker.bot.command;
 
 import backend.academy.linktracker.bot.client.ScrapperClient;
-import backend.academy.linktracker.bot.repository.InMemoryLinkRepository;
 import backend.academy.linktracker.bot.repository.SessionRepository;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Update;
@@ -16,9 +15,8 @@ import org.springframework.stereotype.Component;
 public class UntrackCommand implements BotCommand {
 
     private final TelegramBot telegramBot;
-    private final InMemoryLinkRepository linkRepository;
-    private final SessionRepository sessionRepository;
     private final ScrapperClient scrapperClient;
+    private final SessionRepository sessionRepository;
 
     @Override
     public String command() {
@@ -36,7 +34,6 @@ public class UntrackCommand implements BotCommand {
         String text = update.message().text();
         sessionRepository.getOrCreate(chatId).reset();
 
-        // Extract URL from command: /untrack <url>
         String[] parts = text.trim().split("\\s+", 2);
         if (parts.length < 2 || parts[1].isBlank()) {
             telegramBot.execute(new SendMessage(chatId, "Укажите ссылку: /untrack <ссылка>"));
@@ -44,18 +41,13 @@ public class UntrackCommand implements BotCommand {
         }
         String url = parts[1].trim();
 
-        if (!linkRepository.exists(chatId, url)) {
-            telegramBot.execute(new SendMessage(chatId, "Ссылка не найдена в списке отслеживаемых."));
-            return;
-        }
-
         try {
             scrapperClient.removeLink(chatId, url);
+            log.atInfo().addKeyValue("url", url).addKeyValue("chatId", chatId).log("link.untracked");
+            telegramBot.execute(new SendMessage(chatId, "✅ Отслеживание ссылки прекращено:\n" + url));
         } catch (Exception e) {
-            log.warn("Failed to remove link from scrapper for chatId={} url={}: {}", chatId, url, e.getMessage());
+            log.warn("Failed to remove link chatId={} url={}: {}", chatId, url, e.getMessage());
+            telegramBot.execute(new SendMessage(chatId, "❌ Ссылка не найдена в списке отслеживаемых."));
         }
-        linkRepository.remove(chatId, url);
-        log.info("Untracked link url={} for chatId={}", url, chatId);
-        telegramBot.execute(new SendMessage(chatId, "✅ Отслеживание ссылки прекращено:\n" + url));
     }
 }

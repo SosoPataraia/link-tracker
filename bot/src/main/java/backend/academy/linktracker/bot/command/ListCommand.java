@@ -1,7 +1,7 @@
 package backend.academy.linktracker.bot.command;
 
-import backend.academy.linktracker.bot.model.TrackedLink;
-import backend.academy.linktracker.bot.repository.InMemoryLinkRepository;
+import backend.academy.linktracker.bot.client.ScrapperClient;
+import backend.academy.linktracker.bot.dto.LinkResponse;
 import backend.academy.linktracker.bot.repository.SessionRepository;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Update;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 public class ListCommand implements BotCommand {
 
     private final TelegramBot telegramBot;
-    private final InMemoryLinkRepository linkRepository;
+    private final ScrapperClient scrapperClient;
     private final SessionRepository sessionRepository;
 
     @Override
@@ -37,14 +37,14 @@ public class ListCommand implements BotCommand {
         String[] parts = text.trim().split("\\s+", 2);
         String filterTag = parts.length >= 2 ? parts[1].trim() : null;
 
-        List<TrackedLink> links;
-        String header;
+        var response = scrapperClient.getLinks(chatId);
+        List<LinkResponse> links = (response != null && response.getLinks() != null) ? response.getLinks() : List.of();
+
         if (filterTag != null && !filterTag.isBlank()) {
-            links = linkRepository.findByChatAndTag(chatId, filterTag);
-            header = "📋 Ссылки с тегом \"" + filterTag + "\":";
-        } else {
-            links = linkRepository.findAllByChat(chatId);
-            header = "📋 Отслеживаемые ссылки:";
+            String tag = filterTag;
+            links = links.stream()
+                    .filter(l -> l.getTags() != null && l.getTags().contains(tag))
+                    .toList();
         }
 
         if (links.isEmpty()) {
@@ -55,11 +55,13 @@ public class ListCommand implements BotCommand {
             return;
         }
 
+        String header = filterTag != null ? "📋 Ссылки с тегом \"" + filterTag + "\":" : "📋 Отслеживаемые ссылки:";
+
         var sb = new StringBuilder(header).append("\n\n");
         for (int i = 0; i < links.size(); i++) {
-            TrackedLink link = links.get(i);
+            LinkResponse link = links.get(i);
             sb.append(i + 1).append(". ").append(link.getUrl());
-            if (!link.getTags().isEmpty()) {
+            if (link.getTags() != null && !link.getTags().isEmpty()) {
                 sb.append("\n   🏷 Теги: ").append(String.join(", ", link.getTags()));
             }
             sb.append("\n");

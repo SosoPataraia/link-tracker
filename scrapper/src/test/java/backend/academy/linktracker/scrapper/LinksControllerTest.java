@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import backend.academy.linktracker.scrapper.controller.LinksController;
 import backend.academy.linktracker.scrapper.controller.TgChatController;
 import backend.academy.linktracker.scrapper.repository.ChatRepository;
+import backend.academy.linktracker.scrapper.repository.InMemoryChatRepository;
 import backend.academy.linktracker.scrapper.repository.InMemoryLinkRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,7 @@ class LinksControllerTest {
 
     @BeforeEach
     void setUp() {
-        chatRepository = new ChatRepository();
+        chatRepository = new InMemoryChatRepository();
         linkRepository = new InMemoryLinkRepository();
 
         var linksController = new LinksController(linkRepository, chatRepository);

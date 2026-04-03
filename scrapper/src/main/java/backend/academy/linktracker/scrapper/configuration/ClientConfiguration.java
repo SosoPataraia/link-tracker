@@ -12,12 +12,15 @@ public class ClientConfiguration {
 
     @Bean
     public RestClient gitHubRestClient(GithubProperties properties) {
-        return RestClient.builder()
+        RestClient.Builder builder = RestClient.builder()
                 .baseUrl("https://api.github.com")
-                .defaultHeader("Authorization", "Bearer " + properties.getToken())
                 .defaultHeader("Accept", "application/vnd.github+json")
-                .defaultHeader("X-GitHub-Api-Version", "2022-11-28")
-                .build();
+                .defaultHeader("X-GitHub-Api-Version", "2022-11-28");
+
+        if (properties.getToken() != null && !properties.getToken().isBlank()) {
+            builder.defaultHeader("Authorization", "Bearer " + properties.getToken());
+        }
+        return builder.build();
     }
 
     @Bean

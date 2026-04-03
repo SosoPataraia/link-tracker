@@ -2,9 +2,7 @@ package backend.academy.linktracker.bot.handler;
 
 import backend.academy.linktracker.bot.client.ScrapperClient;
 import backend.academy.linktracker.bot.command.BotCommand;
-import backend.academy.linktracker.bot.model.TrackedLink;
 import backend.academy.linktracker.bot.model.UserSession;
-import backend.academy.linktracker.bot.repository.InMemoryLinkRepository;
 import backend.academy.linktracker.bot.repository.SessionRepository;
 import backend.academy.linktracker.bot.state.UserState;
 import com.pengrad.telegrambot.TelegramBot;
@@ -27,19 +25,16 @@ public class TelegramUpdateHandler {
 
     private final TelegramBot telegramBot;
     private final SessionRepository sessionRepository;
-    private final InMemoryLinkRepository linkRepository;
     private final ScrapperClient scrapperClient;
     private final Map<String, BotCommand> commandMap;
 
     public TelegramUpdateHandler(
             TelegramBot telegramBot,
             SessionRepository sessionRepository,
-            InMemoryLinkRepository linkRepository,
             ScrapperClient scrapperClient,
             List<BotCommand> commands) {
         this.telegramBot = telegramBot;
         this.sessionRepository = sessionRepository;
-        this.linkRepository = linkRepository;
         this.scrapperClient = scrapperClient;
         this.commandMap = commands.stream().collect(Collectors.toMap(BotCommand::command, Function.identity()));
     }
@@ -56,7 +51,6 @@ public class TelegramUpdateHandler {
             }
             return UpdatesListener.CONFIRMED_UPDATES_ALL;
         });
-
         log.info("Bot started, registered {} commands", commandMap.size());
     }
 
@@ -77,14 +71,24 @@ public class TelegramUpdateHandler {
         String text = update.message().text().trim();
         UserSession session = sessionRepository.getOrCreate(chatId);
 
-        log.info(
-                "Handling update chatId={} state={} text={}",
-                chatId,
-                session.getState(),
-                text.length() > 50 ? text.substring(0, 50) + "..." : text);
+        log.atInfo()
+                .addKeyValue("chatId", chatId)
+                .addKeyValue("state", session.getState())
+                .log("update.received");
 
         if (text.startsWith("/")) {
             String commandKey = text.split("\\s+")[0].toLowerCase();
+
+            // /skip works in WAITING_FOR_TAGS and WAITING_FOR_FILTERS
+            if (commandKey.equals("/skip")) {
+                switch (session.getState()) {
+                    case WAITING_FOR_TAGS -> handleTagsInput(chatId, "", session);
+                    case WAITING_FOR_FILTERS -> handleFiltersInput(chatId, "", session);
+                    default -> telegramBot.execute(new SendMessage(chatId, "Нет активной операции для пропуска."));
+                }
+                return;
+            }
+
             BotCommand cmd = commandMap.get(commandKey);
             if (cmd != null) {
                 if (!commandKey.equals("/track") && !commandKey.equals("/cancel")) {
@@ -93,7 +97,7 @@ public class TelegramUpdateHandler {
                 cmd.handle(update);
                 return;
             }
-            // Unknown command
+
             if (session.getState() != UserState.IDLE) {
                 session.reset();
             }
@@ -105,22 +109,17 @@ public class TelegramUpdateHandler {
         switch (session.getState()) {
             case WAITING_FOR_LINK -> handleLinkInput(chatId, text, session);
             case WAITING_FOR_TAGS -> handleTagsInput(chatId, text, session);
+            case WAITING_FOR_FILTERS -> handleFiltersInput(chatId, text, session);
             default -> telegramBot.execute(new SendMessage(chatId, "Введите команду. Используйте /help для справки."));
         }
     }
 
     private void handleLinkInput(long chatId, String url, UserSession session) {
         if (!isValidUrl(url)) {
-            telegramBot.execute(
-                    new SendMessage(
-                            chatId,
-                            "❌ Некорректная ссылка. Пожалуйста, введите корректный URL (например, https://github.com/user/repo)"));
-            return;
-        }
-
-        if (linkRepository.exists(chatId, url)) {
-            session.reset();
-            telegramBot.execute(new SendMessage(chatId, "Ссылка уже отслеживается"));
+            telegramBot.execute(new SendMessage(
+                    chatId,
+                    "❌ Некорректная ссылка. Поддерживаются только github.com и stackoverflow.com\n"
+                            + "Например: https://github.com/user/repo"));
             return;
         }
 
@@ -130,46 +129,67 @@ public class TelegramUpdateHandler {
                 chatId,
                 "✅ Ссылка принята: " + url + "\n\n"
                         + "Введите теги через запятую (необязательно).\n"
-                        + "Например: работа, баг, документация\n\n"
-                        + "Или отправьте пустое сообщение / /skip чтобы пропустить."));
+                        + "Например: работа, баг\n\n"
+                        + "Или отправьте /skip чтобы пропустить."));
     }
 
     private void handleTagsInput(long chatId, String input, UserSession session) {
-        String url = session.getPendingUrl();
         List<String> tags = List.of();
-
-        if (!input.isBlank() && !input.equalsIgnoreCase("/skip")) {
+        if (!input.isBlank()) {
             tags = Arrays.stream(input.split(","))
                     .map(String::trim)
                     .filter(t -> !t.isBlank())
                     .toList();
         }
+        session.setPendingTags(tags);
+        session.setState(UserState.WAITING_FOR_FILTERS);
+        telegramBot.execute(new SendMessage(
+                chatId,
+                "Введите фильтры через запятую (необязательно).\n"
+                        + "Например: open, bug\n\n"
+                        + "Или отправьте /skip чтобы пропустить."));
+    }
 
-        var link = new TrackedLink(url, new java.util.ArrayList<>(tags));
-        linkRepository.save(chatId, link);
+    private void handleFiltersInput(long chatId, String input, UserSession session) {
+        List<String> filters = List.of();
+        if (!input.isBlank()) {
+            filters = Arrays.stream(input.split(","))
+                    .map(String::trim)
+                    .filter(f -> !f.isBlank())
+                    .toList();
+        }
+
+        String url = session.getPendingUrl();
+        List<String> tags = session.getPendingTags();
+        session.reset();
 
         try {
             scrapperClient.registerChat(chatId);
-            scrapperClient.addLink(chatId, url, tags);
-            log.info("Registered link url={} tags={} for chatId={}", url, tags, chatId);
+            scrapperClient.addLink(chatId, url, tags, filters);
+            log.atInfo()
+                    .addKeyValue("url", url)
+                    .addKeyValue("chatId", chatId)
+                    .addKeyValue("tags", tags)
+                    .addKeyValue("filters", filters)
+                    .log("link.registered");
+            String tagsInfo = tags.isEmpty() ? "" : "\n🏷 Теги: " + String.join(", ", tags);
+            String filtersInfo = filters.isEmpty() ? "" : "\n🔍 Фильтры: " + String.join(", ", filters);
+            telegramBot.execute(
+                    new SendMessage(chatId, "✅ Ссылка добавлена в отслеживание:\n" + url + tagsInfo + filtersInfo));
         } catch (Exception e) {
-            log.warn("Failed to register link in scrapper for chatId={} url={}: {}", chatId, url, e.getMessage());
+            log.warn("Failed to register link chatId={} url={}: {}", chatId, url, e.getMessage());
+            telegramBot.execute(new SendMessage(chatId, "❌ Не удалось добавить ссылку. Попробуйте позже."));
         }
-
-        session.reset();
-
-        String tagsInfo = tags.isEmpty() ? "" : "\n🏷 Теги: " + String.join(", ", tags);
-        telegramBot.execute(new SendMessage(chatId, "✅ Ссылка добавлена в отслеживание:\n" + url + tagsInfo));
     }
 
     private boolean isValidUrl(String url) {
         try {
             URI uri = URI.create(url);
             String scheme = uri.getScheme();
-            return scheme != null
-                    && (scheme.equals("http") || scheme.equals("https"))
-                    && uri.getHost() != null
-                    && !uri.getHost().isBlank();
+            String host = uri.getHost();
+            if (host == null || host.isBlank()) return false;
+            if (scheme == null || (!scheme.equals("http") && !scheme.equals("https"))) return false;
+            return host.equals("github.com") || host.equals("stackoverflow.com");
         } catch (Exception e) {
             return false;
         }

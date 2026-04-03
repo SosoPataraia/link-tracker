@@ -2,18 +2,22 @@ package backend.academy.linktracker.bot;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import backend.academy.linktracker.bot.client.ScrapperClient;
 import backend.academy.linktracker.bot.command.BotCommand;
 import backend.academy.linktracker.bot.command.CancelCommand;
+import backend.academy.linktracker.bot.command.HelpCommand;
 import backend.academy.linktracker.bot.command.ListCommand;
 import backend.academy.linktracker.bot.command.StartCommand;
 import backend.academy.linktracker.bot.command.TrackCommand;
 import backend.academy.linktracker.bot.command.UntrackCommand;
 import backend.academy.linktracker.bot.handler.TelegramUpdateHandler;
-import backend.academy.linktracker.bot.repository.InMemoryLinkRepository;
+import backend.academy.linktracker.bot.repository.InMemorySessionRepository;
 import backend.academy.linktracker.bot.repository.SessionRepository;
 import backend.academy.linktracker.bot.state.UserState;
 import com.pengrad.telegrambot.TelegramBot;
@@ -47,23 +51,22 @@ class TelegramUpdateHandlerTest {
     SendResponse sendResponse;
 
     SessionRepository sessionRepository;
-    InMemoryLinkRepository linkRepository;
     TelegramUpdateHandler handler;
 
     @BeforeEach
     void setUp() {
-        sessionRepository = new SessionRepository();
-        linkRepository = new InMemoryLinkRepository();
+        sessionRepository = new InMemorySessionRepository();
         when(telegramBot.execute(any(SendMessage.class))).thenReturn(sendResponse);
 
         List<BotCommand> commands = List.of(
                 new StartCommand(telegramBot),
                 new TrackCommand(telegramBot, sessionRepository),
-                new UntrackCommand(telegramBot, linkRepository, sessionRepository, scrapperClient),
-                new ListCommand(telegramBot, linkRepository, sessionRepository),
-                new CancelCommand(telegramBot, sessionRepository));
+                new UntrackCommand(telegramBot, scrapperClient, sessionRepository),
+                new ListCommand(telegramBot, scrapperClient, sessionRepository),
+                new CancelCommand(telegramBot, sessionRepository),
+                new HelpCommand(telegramBot, List.of()));
 
-        handler = new TelegramUpdateHandler(telegramBot, sessionRepository, linkRepository, scrapperClient, commands);
+        handler = new TelegramUpdateHandler(telegramBot, sessionRepository, scrapperClient, commands);
     }
 
     @Test
@@ -88,46 +91,54 @@ class TelegramUpdateHandlerTest {
     }
 
     @Test
-    void tagsInput_savesLinkWithTags() {
+    void nonSupportedHostUrl_staysInWaitingForLink() {
         sendUpdate(100L, "/track");
-        sendUpdate(100L, "https://github.com/user/repo");
-        sendUpdate(100L, "work, java");
-
-        var links = linkRepository.findAllByChat(100L);
-        assertThat(links).hasSize(1);
-        assertThat(links.getFirst().getTags()).contains("work", "java");
-        assertThat(sessionRepository.get(100L).getState()).isEqualTo(UserState.IDLE);
+        sendUpdate(100L, "https://example.com/something");
+        assertThat(sessionRepository.get(100L).getState()).isEqualTo(UserState.WAITING_FOR_LINK);
     }
 
     @Test
-    void duplicateLink_resetsStateAndNotifiesUser() {
+    void tagsInput_movesToWaitingForFilters() {
         sendUpdate(100L, "/track");
         sendUpdate(100L, "https://github.com/user/repo");
-        sendUpdate(100L, "");
+        sendUpdate(100L, "work, java");
+        assertThat(sessionRepository.get(100L).getState()).isEqualTo(UserState.WAITING_FOR_FILTERS);
+        assertThat(sessionRepository.get(100L).getPendingTags()).contains("work", "java");
+    }
 
-        // Try to add same link again
+    @Test
+    void skipTags_movesToWaitingForFilters() {
         sendUpdate(100L, "/track");
         sendUpdate(100L, "https://github.com/user/repo");
+        sendUpdate(100L, "/skip");
+        assertThat(sessionRepository.get(100L).getState()).isEqualTo(UserState.WAITING_FOR_FILTERS);
+    }
 
-        // Duplicate detected — state reset to IDLE
+    @Test
+    void filtersInput_completesRegistration() {
+        sendUpdate(100L, "/track");
+        sendUpdate(100L, "https://github.com/user/repo");
+        sendUpdate(100L, "work");
+        sendUpdate(100L, "open, bug");
         assertThat(sessionRepository.get(100L).getState()).isEqualTo(UserState.IDLE);
-        // Only one link stored
-        assertThat(linkRepository.findAllByChat(100L)).hasSize(1);
+        verify(scrapperClient).addLink(anyLong(), anyString(), anyList(), anyList());
+    }
+
+    @Test
+    void skipFilters_completesRegistration() {
+        sendUpdate(100L, "/track");
+        sendUpdate(100L, "https://github.com/user/repo");
+        sendUpdate(100L, "/skip");
+        sendUpdate(100L, "/skip");
+        assertThat(sessionRepository.get(100L).getState()).isEqualTo(UserState.IDLE);
+        verify(scrapperClient).addLink(anyLong(), anyString(), anyList(), anyList());
     }
 
     @Test
     void cancelCommand_resetsState() {
         sendUpdate(100L, "/track");
         assertThat(sessionRepository.get(100L).getState()).isEqualTo(UserState.WAITING_FOR_LINK);
-
         sendUpdate(100L, "/cancel");
-        assertThat(sessionRepository.get(100L).getState()).isEqualTo(UserState.IDLE);
-    }
-
-    @Test
-    void newCommandDuringDialog_cancelsDialog() {
-        sendUpdate(100L, "/track");
-        sendUpdate(100L, "/list");
         assertThat(sessionRepository.get(100L).getState()).isEqualTo(UserState.IDLE);
     }
 
