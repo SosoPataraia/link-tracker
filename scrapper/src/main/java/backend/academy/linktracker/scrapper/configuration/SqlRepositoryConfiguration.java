@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 @Configuration
-@ConditionalOnProperty(name = "app.database.access-type", havingValue = "SQL")
+@ConditionalOnProperty(name = "app.database.access-type", havingValue = "SQL", matchIfMissing = true)
 public class SqlRepositoryConfiguration {
 
     @Bean
