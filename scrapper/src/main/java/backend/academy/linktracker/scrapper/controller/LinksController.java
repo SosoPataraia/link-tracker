@@ -6,7 +6,6 @@ import backend.academy.linktracker.scrapper.dto.ListLinksResponse;
 import backend.academy.linktracker.scrapper.dto.RemoveLinkRequest;
 import backend.academy.linktracker.scrapper.model.TrackedLink;
 import backend.academy.linktracker.scrapper.repository.ChatRepository;
-import backend.academy.linktracker.scrapper.repository.InMemoryLinkRepository;
 import backend.academy.linktracker.scrapper.repository.LinkRepository;
 import jakarta.validation.Valid;
 import java.time.Instant;

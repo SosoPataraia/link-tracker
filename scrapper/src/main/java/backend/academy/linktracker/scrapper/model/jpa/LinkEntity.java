@@ -39,9 +39,9 @@ public class LinkEntity {
 
     @ManyToMany
     @jakarta.persistence.JoinTable(
-        name = "link_chat",
-        joinColumns = @jakarta.persistence.JoinColumn(name = "link_id"),
-        inverseJoinColumns = @jakarta.persistence.JoinColumn(name = "chat_id"))
+            name = "link_chat",
+            joinColumns = @jakarta.persistence.JoinColumn(name = "link_id"),
+            inverseJoinColumns = @jakarta.persistence.JoinColumn(name = "chat_id"))
     private Set<ChatEntity> chats = new HashSet<>();
 
     @OneToMany(mappedBy = "link", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)

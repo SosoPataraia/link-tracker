@@ -2,9 +2,8 @@ package backend.academy.linktracker.scrapper.controller;
 
 import backend.academy.linktracker.scrapper.dto.ApiErrorResponse;
 import backend.academy.linktracker.scrapper.repository.ChatRepository;
-import backend.academy.linktracker.scrapper.repository.InMemoryLinkRepository;
-import java.util.List;
 import backend.academy.linktracker.scrapper.repository.LinkRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

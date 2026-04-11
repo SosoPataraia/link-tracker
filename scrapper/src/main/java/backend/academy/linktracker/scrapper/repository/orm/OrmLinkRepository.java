@@ -22,14 +22,13 @@ public class OrmLinkRepository implements LinkRepository {
     public TrackedLink save(TrackedLink link) {
         ChatEntity chat = chatJpaRepository.getReferenceById(link.getChatId());
 
-        LinkEntity entity = linkJpaRepository.findByUrl(link.getUrl())
-            .orElseGet(() -> {
-                var newLink = new LinkEntity();
-                newLink.setUrl(link.getUrl());
-                newLink.setLastChecked(link.getLastChecked());
-                newLink.setLastUpdated(link.getLastUpdated());
-                return newLink;
-            });
+        LinkEntity entity = linkJpaRepository.findByUrl(link.getUrl()).orElseGet(() -> {
+            var newLink = new LinkEntity();
+            newLink.setUrl(link.getUrl());
+            newLink.setLastChecked(link.getLastChecked());
+            newLink.setLastUpdated(link.getLastUpdated());
+            return newLink;
+        });
 
         entity.getChats().add(chat);
 
@@ -50,29 +49,26 @@ public class OrmLinkRepository implements LinkRepository {
 
     @Override
     public Optional<TrackedLink> findById(long id) {
-        return linkJpaRepository.findById(id)
-            .map(e -> toModel(e, extractChatId(e)));
+        return linkJpaRepository.findById(id).map(e -> toModel(e, extractChatId(e)));
     }
 
     @Override
     public Optional<TrackedLink> findByChatAndUrl(long chatId, String url) {
-        return linkJpaRepository.findByChatIdAndUrl(chatId, url)
-            .map(e -> toModel(e, chatId));
+        return linkJpaRepository.findByChatIdAndUrl(chatId, url).map(e -> toModel(e, chatId));
     }
 
     @Override
     public List<TrackedLink> findAllByChat(long chatId) {
         return linkJpaRepository.findAllByChatsId(chatId).stream()
-            .map(e -> toModel(e, chatId))
-            .toList();
+                .map(e -> toModel(e, chatId))
+                .toList();
     }
 
     @Override
     public Collection<TrackedLink> findAll() {
         return linkJpaRepository.findAll().stream()
-            .flatMap(e -> e.getChats().stream()
-                .map(chat -> toModel(e, chat.getId())))
-            .toList();
+                .flatMap(e -> e.getChats().stream().map(chat -> toModel(e, chat.getId())))
+                .toList();
     }
 
     @Override
@@ -121,16 +117,16 @@ public class OrmLinkRepository implements LinkRepository {
         link.setLastChecked(entity.getLastChecked());
         link.setLastUpdated(entity.getLastUpdated());
         link.setTags(entity.getTags().stream()
-            .filter(t -> t.getChatId().equals(chatId))
-            .map(LinkTagEntity::getTag)
-            .toList());
+                .filter(t -> t.getChatId().equals(chatId))
+                .map(LinkTagEntity::getTag)
+                .toList());
         return link;
     }
 
     private long extractChatId(LinkEntity entity) {
         return entity.getChats().stream()
-            .mapToLong(ChatEntity::getId)
-            .findFirst()
-            .orElse(0L);
+                .mapToLong(ChatEntity::getId)
+                .findFirst()
+                .orElse(0L);
     }
 }

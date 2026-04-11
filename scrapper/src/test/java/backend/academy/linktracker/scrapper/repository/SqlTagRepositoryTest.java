@@ -1,12 +1,12 @@
 package backend.academy.linktracker.scrapper.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import backend.academy.linktracker.scrapper.model.TrackedLink;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class SqlTagRepositoryTest extends BaseRepositoryTest {
 
@@ -27,8 +27,7 @@ class SqlTagRepositoryTest extends BaseRepositoryTest {
         tagRepository.addTag(link.getId(), 1L, "work");
         tagRepository.addTag(link.getId(), 1L, "java");
 
-        assertThat(tagRepository.findTags(link.getId(), 1L))
-            .containsExactlyInAnyOrder("work", "java");
+        assertThat(tagRepository.findTags(link.getId(), 1L)).containsExactlyInAnyOrder("work", "java");
     }
 
     @Test
@@ -64,8 +63,7 @@ class SqlTagRepositoryTest extends BaseRepositoryTest {
         tagRepository.addTag(link1.getId(), 1L, "work");
         tagRepository.addTag(link2.getId(), 1L, "work");
 
-        assertThat(tagRepository.findLinkIdsByTag(1L, "work"))
-            .containsExactlyInAnyOrder(link1.getId(), link2.getId());
+        assertThat(tagRepository.findLinkIdsByTag(1L, "work")).containsExactlyInAnyOrder(link1.getId(), link2.getId());
     }
 
     private TrackedLink savedLink(long chatId, String url) {

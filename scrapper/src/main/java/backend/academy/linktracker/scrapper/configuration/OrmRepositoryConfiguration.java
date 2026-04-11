@@ -9,10 +9,10 @@ import backend.academy.linktracker.scrapper.repository.orm.OrmChatRepository;
 import backend.academy.linktracker.scrapper.repository.orm.OrmLinkRepository;
 import backend.academy.linktracker.scrapper.repository.orm.OrmTagRepository;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import jakarta.persistence.PersistenceContext;
 
 @Configuration
 @ConditionalOnProperty(name = "app.database.access-type", havingValue = "ORM")
@@ -27,8 +27,7 @@ public class OrmRepositoryConfiguration {
     }
 
     @Bean
-    public LinkRepository linkRepository(LinkJpaRepository linkJpaRepository,
-                                         ChatJpaRepository chatJpaRepository) {
+    public LinkRepository linkRepository(LinkJpaRepository linkJpaRepository, ChatJpaRepository chatJpaRepository) {
         return new OrmLinkRepository(linkJpaRepository, chatJpaRepository);
     }
 

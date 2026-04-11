@@ -1,12 +1,12 @@
 package backend.academy.linktracker.scrapper.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import backend.academy.linktracker.scrapper.model.TrackedLink;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class SqlLinkRepositoryTest extends BaseRepositoryTest {
 
@@ -35,7 +35,8 @@ class SqlLinkRepositoryTest extends BaseRepositoryTest {
 
         linkRepository.remove(1L, "https://github.com/user/repo");
 
-        assertThat(linkRepository.findByChatAndUrl(1L, "https://github.com/user/repo")).isEmpty();
+        assertThat(linkRepository.findByChatAndUrl(1L, "https://github.com/user/repo"))
+                .isEmpty();
     }
 
     @Test

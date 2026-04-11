@@ -26,5 +26,7 @@ public class SqlRepositoryConfiguration {
     }
 
     @Bean
-    public TagRepository tagRepository(JdbcClient jdbcClient) { return new SqlTagRepository(jdbcClient); }
+    public TagRepository tagRepository(JdbcClient jdbcClient) {
+        return new SqlTagRepository(jdbcClient);
+    }
 }

@@ -14,6 +14,7 @@ public class DatabaseProperties {
     private AccessType accessType = AccessType.SQL;
 
     public enum AccessType {
-        SQL, ORM
+        SQL,
+        ORM
     }
 }
