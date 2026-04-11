@@ -4,6 +4,17 @@ server:
 spring:
   application:
     name: scrapper
+    datasource:
+      url: jdbc:postgresql://localhost:5432/scrapper
+      username: postgres
+      password: postgres
+      driver-class-name: org.postgresql.Driver
+      liquibase:
+        enabled: false
+      jpa:
+        hibernate:
+          ddl-auto: validate
+        open-in-view: false
 
 app:
   stackoverflow:
@@ -15,3 +26,4 @@ app:
     base-url: ${BOT_BASE_URL:http://localhost:8080}
   scheduler:
     interval: 60000
+
