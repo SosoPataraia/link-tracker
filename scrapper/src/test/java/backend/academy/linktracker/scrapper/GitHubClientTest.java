@@ -10,6 +10,7 @@ import backend.academy.linktracker.scrapper.client.GitHubClientImpl;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -17,6 +18,7 @@ import org.springframework.web.client.RestClient;
 import org.wiremock.spring.EnableWireMock;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@Import(TestcontainersConfiguration.class)
 @ActiveProfiles("test")
 @EnableWireMock
 class GitHubClientTest {

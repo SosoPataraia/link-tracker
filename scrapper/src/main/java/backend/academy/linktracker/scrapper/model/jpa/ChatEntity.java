@@ -19,6 +19,6 @@ public class ChatEntity {
     @Id
     private Long id;
 
-    @Column(name = "created_at")
-    private Instant createdAt;
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt = Instant.now();
 }
