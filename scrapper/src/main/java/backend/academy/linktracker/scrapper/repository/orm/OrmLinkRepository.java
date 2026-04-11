@@ -77,7 +77,7 @@ public class OrmLinkRepository implements LinkRepository {
         Optional<LinkEntity> optLink = linkJpaRepository.findByChatIdAndUrl(chatId, url);
         if (optLink.isEmpty()) return false;
 
-        LinkEntity entity = optLink.get();
+        LinkEntity entity = optLink.orElseThrow();
         ChatEntity chat = chatJpaRepository.getReferenceById(chatId);
 
         entity.getTags().removeIf(t -> t.getChatId().equals(chatId));

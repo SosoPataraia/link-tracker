@@ -122,7 +122,7 @@ public class SqlLinkRepository implements LinkRepository {
 
         if (linkId.isEmpty()) return false;
 
-        long id = linkId.get();
+        long id = linkId.orElseThrow();
 
         jdbcClient
                 .sql("DELETE FROM link_tags WHERE link_id = :linkId AND chat_id = :chatId")

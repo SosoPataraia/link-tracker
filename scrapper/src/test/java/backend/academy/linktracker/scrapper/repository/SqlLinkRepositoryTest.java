@@ -25,7 +25,7 @@ class SqlLinkRepositoryTest extends BaseRepositoryTest {
 
         var found = linkRepository.findByChatAndUrl(1L, "https://github.com/user/repo");
         assertThat(found).isPresent();
-        assertThat(found.get().getTags()).containsExactly("work");
+        assertThat(found.orElseThrow().getTags()).containsExactly("work");
     }
 
     @Test
