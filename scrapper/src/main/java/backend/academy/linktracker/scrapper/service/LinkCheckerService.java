@@ -5,11 +5,11 @@ import backend.academy.linktracker.scrapper.client.GitHubClient;
 import backend.academy.linktracker.scrapper.client.StackOverflowClient;
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;
 import backend.academy.linktracker.scrapper.model.TrackedLink;
-import backend.academy.linktracker.scrapper.repository.InMemoryLinkRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import backend.academy.linktracker.scrapper.repository.LinkRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,7 +23,7 @@ public class LinkCheckerService {
     private static final Pattern STACKOVERFLOW_PATTERN =
             Pattern.compile("https?://stackoverflow\\.com/questions/(\\d+).*");
 
-    private final InMemoryLinkRepository linkRepository;
+    private final LinkRepository linkRepository;
     private final GitHubClient gitHubClient; // now an interface
     private final StackOverflowClient stackOverflowClient; // now an interface
     private final BotClient botClient; // now an interface

@@ -4,6 +4,7 @@ import backend.academy.linktracker.scrapper.dto.ApiErrorResponse;
 import backend.academy.linktracker.scrapper.repository.ChatRepository;
 import backend.academy.linktracker.scrapper.repository.InMemoryLinkRepository;
 import java.util.List;
+import backend.academy.linktracker.scrapper.repository.LinkRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -22,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class TgChatController {
 
     private final ChatRepository chatRepository;
-    private final InMemoryLinkRepository linkRepository;
+    private final LinkRepository linkRepository;
 
     @ResponseStatus(HttpStatus.OK)
     @PostMapping("/{id}")
