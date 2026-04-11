@@ -2,9 +2,7 @@ package backend.academy.linktracker.scrapper.repository;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import org.springframework.stereotype.Repository;
 
-@Repository
 public class InMemoryChatRepository implements ChatRepository {
 
     private final Set<Long> registeredChats = ConcurrentHashMap.newKeySet();

@@ -26,4 +26,5 @@ app:
     base-url: ${BOT_BASE_URL:http://localhost:8080}
   scheduler:
     interval: 60000
-
+  database:
+    access-type: SQL
