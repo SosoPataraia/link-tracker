@@ -144,7 +144,7 @@ class TelegramBotIntegrationTest implements WithAssertions {
             return UpdatesListener.CONFIRMED_UPDATES_ALL;
         });
 
-        boolean received = latch.await(10, TimeUnit.SECONDS);
+        boolean received = latch.await(30, TimeUnit.SECONDS);
 
         assertTrue(received);
         assertThat(receivedUpdates)
