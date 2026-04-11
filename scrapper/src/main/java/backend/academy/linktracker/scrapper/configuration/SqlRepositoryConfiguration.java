@@ -2,8 +2,10 @@ package backend.academy.linktracker.scrapper.configuration;
 
 import backend.academy.linktracker.scrapper.repository.ChatRepository;
 import backend.academy.linktracker.scrapper.repository.LinkRepository;
+import backend.academy.linktracker.scrapper.repository.TagRepository;
 import backend.academy.linktracker.scrapper.repository.sql.SqlChatRepository;
 import backend.academy.linktracker.scrapper.repository.sql.SqlLinkRepository;
+import backend.academy.linktracker.scrapper.repository.sql.SqlTagRepository;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,4 +24,7 @@ public class SqlRepositoryConfiguration {
     public LinkRepository linkRepository(JdbcClient jdbcClient) {
         return new SqlLinkRepository(jdbcClient);
     }
+
+    @Bean
+    public TagRepository tagRepository(JdbcClient jdbcClient) { return new SqlTagRepository(jdbcClient); }
 }
