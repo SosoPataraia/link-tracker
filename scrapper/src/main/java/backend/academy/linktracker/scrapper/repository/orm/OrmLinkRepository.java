@@ -5,6 +5,7 @@ import backend.academy.linktracker.scrapper.model.jpa.ChatEntity;
 import backend.academy.linktracker.scrapper.model.jpa.LinkEntity;
 import backend.academy.linktracker.scrapper.model.jpa.LinkTagEntity;
 import backend.academy.linktracker.scrapper.repository.LinkRepository;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -60,15 +61,15 @@ public class OrmLinkRepository implements LinkRepository {
     @Override
     public List<TrackedLink> findAllByChat(long chatId) {
         return linkJpaRepository.findAllByChatsId(chatId).stream()
-                .map(e -> toModel(e, chatId))
-                .toList();
+            .map(e -> toModel(e, chatId))
+            .toList();
     }
 
     @Override
     public Collection<TrackedLink> findAll() {
         return linkJpaRepository.findAll().stream()
-                .flatMap(e -> e.getChats().stream().map(chat -> toModel(e, chat.getId())))
-                .toList();
+            .flatMap(e -> e.getChats().stream().map(chat -> toModel(e, chat.getId())))
+            .toList();
     }
 
     @Override
@@ -81,7 +82,6 @@ public class OrmLinkRepository implements LinkRepository {
         ChatEntity chat = chatJpaRepository.getReferenceById(chatId);
 
         entity.getTags().removeIf(t -> t.getChatId().equals(chatId));
-
         entity.getChats().remove(chat);
 
         if (entity.getChats().isEmpty()) {
@@ -109,6 +109,17 @@ public class OrmLinkRepository implements LinkRepository {
         }
     }
 
+    @Override
+    @Transactional
+    public void updateLastChecked(long linkId, Instant lastChecked) {
+        linkJpaRepository.findById(linkId).ifPresent(entity -> {
+            entity.setLastChecked(lastChecked);
+            linkJpaRepository.save(entity);
+        });
+    }
+
+    // --- private helpers ---
+
     private TrackedLink toModel(LinkEntity entity, long chatId) {
         var link = new TrackedLink();
         link.setId(entity.getId());
@@ -117,16 +128,16 @@ public class OrmLinkRepository implements LinkRepository {
         link.setLastChecked(entity.getLastChecked());
         link.setLastUpdated(entity.getLastUpdated());
         link.setTags(entity.getTags().stream()
-                .filter(t -> t.getChatId().equals(chatId))
-                .map(LinkTagEntity::getTag)
-                .toList());
+            .filter(t -> t.getChatId().equals(chatId))
+            .map(LinkTagEntity::getTag)
+            .toList());
         return link;
     }
 
     private long extractChatId(LinkEntity entity) {
         return entity.getChats().stream()
-                .mapToLong(ChatEntity::getId)
-                .findFirst()
-                .orElse(0L);
+            .mapToLong(ChatEntity::getId)
+            .findFirst()
+            .orElse(0L);
     }
 }
