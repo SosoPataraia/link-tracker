@@ -27,4 +27,11 @@ public interface LinkRepository {
      * Called by the scheduler after each successful check.
      */
     void updateLastChecked(long linkId, Instant lastChecked);
+
+    /**
+     * Returns up to {@code limit} distinct links ordered by last_checked ASC (nulls first),
+     * so the stalest links are always processed first.
+     * {@code offset} is used for pagination across batches in a single scheduler tick.
+     */
+    List<TrackedLink> findBatch(int offset, int limit);
 }

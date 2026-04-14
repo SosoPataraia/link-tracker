@@ -118,6 +118,20 @@ public class OrmLinkRepository implements LinkRepository {
         });
     }
 
+    @Override
+    public List<TrackedLink> findBatch(int offset, int limit) {
+        return linkJpaRepository.findAll(
+                org.springframework.data.domain.PageRequest.of(
+                    offset / limit,
+                    limit,
+                    org.springframework.data.domain.Sort.by(
+                        org.springframework.data.domain.Sort.Order.asc("lastChecked").nullsFirst())))
+            .getContent()
+            .stream()
+            .flatMap(e -> e.getChats().stream().map(chat -> toModel(e, chat.getId())))
+            .toList();
+    }
+
     // --- private helpers ---
 
     private TrackedLink toModel(LinkEntity entity, long chatId) {

@@ -14,4 +14,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class SchedulerProperties {
 
     private long interval = 60000;
+
+    /**
+     * Number of links to load and process per scheduler tick.
+     * Must be between 50 and 500 per NFR.
+     */
+    private int batchSize = 100;
 }

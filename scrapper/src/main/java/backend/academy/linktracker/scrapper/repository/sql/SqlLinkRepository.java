@@ -192,6 +192,23 @@ public class SqlLinkRepository implements LinkRepository {
             .update();
     }
 
+    @Override
+    public List<TrackedLink> findBatch(int offset, int limit) {
+        var links = jdbcClient
+            .sql("""
+                SELECT l.id, lc.chat_id, l.url, l.last_checked, l.last_updated
+                FROM links l
+                JOIN link_chat lc ON l.id = lc.link_id
+                ORDER BY l.last_checked ASC NULLS FIRST, l.id ASC
+                LIMIT :limit OFFSET :offset
+                """)
+            .param("limit", limit)
+            .param("offset", offset)
+            .query((rs, rowNum) -> mapRow(rs))
+            .list();
+        return links.stream().map(this::withTags).toList();
+    }
+
     private void saveTags(long linkId, long chatId, List<String> tags) {
         if (tags == null || tags.isEmpty()) return;
         for (String tag : tags) {

@@ -76,6 +76,17 @@ public class InMemoryLinkRepository implements LinkRepository {
         }
     }
 
+    @Override
+    public List<TrackedLink> findBatch(int offset, int limit) {
+        return linksById.values().stream()
+            .sorted(java.util.Comparator.comparing(
+                TrackedLink::getLastChecked,
+                java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder())))
+            .skip(offset)
+            .limit(limit)
+            .toList();
+    }
+
     public boolean existsChat(long chatId) {
         return linksByChatId.containsKey(chatId);
     }

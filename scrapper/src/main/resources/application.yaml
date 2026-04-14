@@ -27,5 +27,6 @@ app:
     base-url: ${BOT_BASE_URL:http://localhost:8080}
   scheduler:
     interval: 60000
+    batch-size: 100  # 50–500 per NFR
   database:
     access-type: SQL
