@@ -8,15 +8,15 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class QuestionItem {
+public class AnswerItem {
 
-    @JsonProperty("question_id")
-    private Long questionId;
+    @JsonProperty("answer_id")
+    private Long answerId;
 
-    @JsonProperty("last_activity_date")
-    private Long lastActivityDate;
+    @JsonProperty("creation_date")
+    private Long creationDate;
 
-    private String title;
+    private String body;
 
     private OwnerInfo owner;
 
