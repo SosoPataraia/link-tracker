@@ -22,10 +22,10 @@ public class GitHubClientImpl implements GitHubClient {
     public Instant getLastUpdated(String owner, String repo) {
         try {
             var response = gitHubRestClient
-                .get()
-                .uri("/repos/{owner}/{repo}", owner, repo)
-                .retrieve()
-                .body(RepoResponse.class);
+                    .get()
+                    .uri("/repos/{owner}/{repo}", owner, repo)
+                    .retrieve()
+                    .body(RepoResponse.class);
             return response != null ? response.getPushedAt() : null;
         } catch (RestClientException e) {
             log.error("GitHub API error for {}/{}: {}", owner, repo, e.getMessage());
@@ -37,17 +37,17 @@ public class GitHubClientImpl implements GitHubClient {
     public List<IssueItem> getNewIssues(String owner, String repo, Instant since) {
         try {
             List<IssueItem> items = gitHubRestClient
-                .get()
-                .uri(uriBuilder -> uriBuilder
-                    .path("/repos/{owner}/{repo}/issues")
-                    .queryParam("state", "open")
-                    .queryParam("since", since.toString())
-                    .queryParam("sort", "created")
-                    .queryParam("direction", "desc")
-                    .queryParam("per_page", "50")
-                    .build(owner, repo))
-                .retrieve()
-                .body(new ParameterizedTypeReference<List<IssueItem>>() {});
+                    .get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/repos/{owner}/{repo}/issues")
+                            .queryParam("state", "open")
+                            .queryParam("since", since.toString())
+                            .queryParam("sort", "created")
+                            .queryParam("direction", "desc")
+                            .queryParam("per_page", "50")
+                            .build(owner, repo))
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<List<IssueItem>>() {});
             if (items == null) return List.of();
             return items.stream().filter(i -> !i.isPullRequest()).toList();
         } catch (RestClientException e) {
@@ -60,20 +60,20 @@ public class GitHubClientImpl implements GitHubClient {
     public List<IssueItem> getNewPullRequests(String owner, String repo, Instant since) {
         try {
             List<IssueItem> items = gitHubRestClient
-                .get()
-                .uri(uriBuilder -> uriBuilder
-                    .path("/repos/{owner}/{repo}/pulls")
-                    .queryParam("state", "open")
-                    .queryParam("sort", "created")
-                    .queryParam("direction", "desc")
-                    .queryParam("per_page", "50")
-                    .build(owner, repo))
-                .retrieve()
-                .body(new ParameterizedTypeReference<List<IssueItem>>() {});
+                    .get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/repos/{owner}/{repo}/pulls")
+                            .queryParam("state", "open")
+                            .queryParam("sort", "created")
+                            .queryParam("direction", "desc")
+                            .queryParam("per_page", "50")
+                            .build(owner, repo))
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<List<IssueItem>>() {});
             if (items == null) return List.of();
             return items.stream()
-                .filter(i -> i.getCreatedAt() != null && i.getCreatedAt().isAfter(since))
-                .toList();
+                    .filter(i -> i.getCreatedAt() != null && i.getCreatedAt().isAfter(since))
+                    .toList();
         } catch (RestClientException e) {
             log.error("GitHub pulls API error for {}/{}: {}", owner, repo, e.getMessage());
             return List.of();

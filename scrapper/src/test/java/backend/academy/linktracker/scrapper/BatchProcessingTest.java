@@ -90,8 +90,7 @@ class BatchProcessingTest {
     void findBatch_pagination_worksCorrectly() {
         chatRepository.register(1L);
         for (int i = 1; i <= 5; i++) {
-            savedLink(1L, "https://github.com/user/repo-" + i,
-                Instant.parse("2024-0" + i + "-01T00:00:00Z"));
+            savedLink(1L, "https://github.com/user/repo-" + i, Instant.parse("2024-0" + i + "-01T00:00:00Z"));
         }
 
         List<TrackedLink> firstBatch = linkRepository.findBatch(0, 3);
@@ -116,14 +115,14 @@ class BatchProcessingTest {
 
         // First call throws, second returns a new issue
         when(gitHubClient.getNewIssues("user", "failing-repo", Instant.EPOCH))
-            .thenThrow(new RuntimeException("Simulated API failure"));
+                .thenThrow(new RuntimeException("Simulated API failure"));
         when(gitHubClient.getNewPullRequests("user", "failing-repo", Instant.EPOCH))
-            .thenThrow(new RuntimeException("Simulated API failure"));
+                .thenThrow(new RuntimeException("Simulated API failure"));
 
         when(gitHubClient.getNewIssues("other", "working-repo", Instant.EPOCH))
-            .thenReturn(List.of(issueItem("Working issue", "carol")));
+                .thenReturn(List.of(issueItem("Working issue", "carol")));
         when(gitHubClient.getNewPullRequests("other", "working-repo", Instant.EPOCH))
-            .thenReturn(List.of());
+                .thenReturn(List.of());
 
         // Should not throw
         linkCheckerService.checkLinks(linkRepository.findAll());

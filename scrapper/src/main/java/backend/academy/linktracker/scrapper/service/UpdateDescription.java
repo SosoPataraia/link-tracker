@@ -27,18 +27,17 @@ public class UpdateDescription {
     public static String truncate(String text) {
         if (text == null || text.isBlank()) return "";
         String stripped = text.stripLeading();
-        return stripped.length() <= PREVIEW_LENGTH
-            ? stripped
-            : stripped.substring(0, PREVIEW_LENGTH) + "...";
+        return stripped.length() <= PREVIEW_LENGTH ? stripped : stripped.substring(0, PREVIEW_LENGTH) + "...";
     }
 
     public String format(String url) {
-        String typeLabel = switch (type) {
-            case NEW_ISSUE -> "🐛 New Issue";
-            case NEW_PR -> "🔀 New Pull Request";
-            case NEW_ANSWER -> "💬 New Answer";
-            case NEW_COMMENT -> "📝 New Comment";
-        };
+        String typeLabel =
+                switch (type) {
+                    case NEW_ISSUE -> "🐛 New Issue";
+                    case NEW_PR -> "🔀 New Pull Request";
+                    case NEW_ANSWER -> "💬 New Answer";
+                    case NEW_COMMENT -> "📝 New Comment";
+                };
 
         var sb = new StringBuilder();
         sb.append(typeLabel).append("\n");

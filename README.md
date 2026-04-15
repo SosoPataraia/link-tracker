@@ -62,13 +62,13 @@ Swagger UI: `http://localhost:8081/swagger-ui/index.html`
 
 Key endpoints (all require `Tg-Chat-Id` header except chat registration):
 
-| Method | Path | Description |
-|---|---|---|
-| POST | `/tg-chat/{id}` | Register chat |
-| DELETE | `/tg-chat/{id}` | Delete chat |
-| POST | `/links` | Add link |
-| DELETE | `/links` | Remove link |
-| GET | `/links` | List links |
+| Method |      Path       |  Description  |
+|--------|-----------------|---------------|
+| POST   | `/tg-chat/{id}` | Register chat |
+| DELETE | `/tg-chat/{id}` | Delete chat   |
+| POST   | `/links`        | Add link      |
+| DELETE | `/links`        | Remove link   |
+| GET    | `/links`        | List links    |
 
 Supported links: `github.com/{owner}/{repo}` and `stackoverflow.com/questions/{id}/...`
 
@@ -76,12 +76,12 @@ Supported links: `github.com/{owner}/{repo}` and `stackoverflow.com/questions/{i
 
 `scrapper/src/main/resources/application.yaml`:
 
-| Property | Default | Description |
-|---|---|---|
-| `app.database.access-type` | `SQL` | `SQL` or `ORM` |
-| `app.scheduler.interval` | `60000` | Polling interval ms |
-| `app.scheduler.batch-size` | `100` | Links per tick (50–500) |
-| `app.scheduler.thread-count` | `4` | Parallel threads per batch |
+|           Property           | Default |        Description         |
+|------------------------------|---------|----------------------------|
+| `app.database.access-type`   | `SQL`   | `SQL` or `ORM`             |
+| `app.scheduler.interval`     | `60000` | Polling interval ms        |
+| `app.scheduler.batch-size`   | `100`   | Links per tick (50–500)    |
+| `app.scheduler.thread-count` | `4`     | Parallel threads per batch |
 
 ## Troubleshooting
 

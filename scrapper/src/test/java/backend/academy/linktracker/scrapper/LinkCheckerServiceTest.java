@@ -71,7 +71,7 @@ class LinkCheckerServiceTest {
 
         when(gitHubClient.getNewIssues(anyString(), anyString(), any())).thenReturn(List.of());
         when(gitHubClient.getNewPullRequests(anyString(), anyString(), any()))
-            .thenReturn(List.of(issueItem("Add dark mode", "bob", Instant.parse("2024-01-15T10:00:00Z"), "desc")));
+                .thenReturn(List.of(issueItem("Add dark mode", "bob", Instant.parse("2024-01-15T10:00:00Z"), "desc")));
 
         service.checkLinks(linkRepository.findAll());
 
@@ -98,7 +98,7 @@ class LinkCheckerServiceTest {
         linkRepository.save(link(999L, "https://github.com/other/other"));
 
         when(gitHubClient.getNewIssues("user", "repo", Instant.EPOCH))
-            .thenReturn(List.of(issueItem("Issue", "alice", Instant.parse("2024-01-15T10:00:00Z"), "body")));
+                .thenReturn(List.of(issueItem("Issue", "alice", Instant.parse("2024-01-15T10:00:00Z"), "body")));
         when(gitHubClient.getNewPullRequests("user", "repo", Instant.EPOCH)).thenReturn(List.of());
         when(gitHubClient.getNewIssues("other", "other", Instant.EPOCH)).thenReturn(List.of());
         when(gitHubClient.getNewPullRequests("other", "other", Instant.EPOCH)).thenReturn(List.of());
@@ -117,7 +117,7 @@ class LinkCheckerServiceTest {
 
         when(stackOverflowClient.getQuestion(12345L)).thenReturn(Optional.empty());
         when(stackOverflowClient.getNewAnswers(anyLong(), any()))
-            .thenReturn(List.of(answerItem("charlie", 1705312200L, "Use JUnit 5")));
+                .thenReturn(List.of(answerItem("charlie", 1705312200L, "Use JUnit 5")));
         when(stackOverflowClient.getNewComments(anyLong(), any())).thenReturn(List.of());
 
         service.checkLinks(linkRepository.findAll());
@@ -135,7 +135,7 @@ class LinkCheckerServiceTest {
         when(stackOverflowClient.getQuestion(12345L)).thenReturn(Optional.empty());
         when(stackOverflowClient.getNewAnswers(anyLong(), any())).thenReturn(List.of());
         when(stackOverflowClient.getNewComments(anyLong(), any()))
-            .thenReturn(List.of(commentItem("dave", 1705312200L, "Thanks!")));
+                .thenReturn(List.of(commentItem("dave", 1705312200L, "Thanks!")));
 
         service.checkLinks(linkRepository.findAll());
 

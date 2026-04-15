@@ -36,9 +36,9 @@ public class LinkCheckerScheduler {
         List<String> allFailedUrls = new ArrayList<>();
 
         log.atInfo()
-            .addKeyValue("batchSize", batchSize)
-            .addKeyValue("threadCount", threadCount)
-            .log("scheduler.start");
+                .addKeyValue("batchSize", batchSize)
+                .addKeyValue("threadCount", threadCount)
+                .log("scheduler.start");
 
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
 
@@ -48,9 +48,9 @@ public class LinkCheckerScheduler {
                 if (batch.isEmpty()) break;
 
                 log.atInfo()
-                    .addKeyValue("offset", offset)
-                    .addKeyValue("batchCount", batch.size())
-                    .log("scheduler.batch.processing");
+                        .addKeyValue("offset", offset)
+                        .addKeyValue("batchCount", batch.size())
+                        .log("scheduler.batch.processing");
 
                 List<String> failures = processBatchParallel(batch, threadCount, executor);
                 allFailedUrls.addAll(failures);
@@ -65,23 +65,22 @@ public class LinkCheckerScheduler {
 
         if (!allFailedUrls.isEmpty()) {
             log.atWarn()
-                .addKeyValue("failedCount", allFailedUrls.size())
-                .addKeyValue("failedUrls", allFailedUrls)
-                .log("scheduler.batch.failures");
+                    .addKeyValue("failedCount", allFailedUrls.size())
+                    .addKeyValue("failedUrls", allFailedUrls)
+                    .log("scheduler.batch.failures");
         }
 
         log.atInfo()
-            .addKeyValue("totalProcessed", totalProcessed)
-            .addKeyValue("failedCount", allFailedUrls.size())
-            .log("scheduler.complete");
+                .addKeyValue("totalProcessed", totalProcessed)
+                .addKeyValue("failedCount", allFailedUrls.size())
+                .log("scheduler.complete");
     }
 
     /**
      * Splits the batch into {@code threadCount} sublists, submits each to the executor,
      * waits for all to finish, collects failed URLs.
      */
-    private List<String> processBatchParallel(
-        List<TrackedLink> batch, int threadCount, ExecutorService executor) {
+    private List<String> processBatchParallel(List<TrackedLink> batch, int threadCount, ExecutorService executor) {
 
         List<List<TrackedLink>> sublists = partition(batch, threadCount);
         List<Future<List<String>>> futures = new ArrayList<>();
@@ -111,8 +110,7 @@ public class LinkCheckerScheduler {
     private List<String> processSublist(List<TrackedLink> links) {
         List<String> failures = new ArrayList<>();
 
-        var byUrl = links.stream()
-            .collect(Collectors.groupingBy(TrackedLink::getUrl));
+        var byUrl = links.stream().collect(Collectors.groupingBy(TrackedLink::getUrl));
 
         byUrl.forEach((url, subscribers) -> {
             try {

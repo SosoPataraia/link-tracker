@@ -42,12 +42,12 @@ class UpdateDescriptionTest {
     @Test
     void format_newIssue_containsAllFields() {
         var desc = new UpdateDescription(
-            UpdateDescription.Type.NEW_ISSUE,
-            null,
-            "NPE in login",
-            "alice",
-            Instant.parse("2024-01-15T10:00:00Z"),
-            "Stack trace here");
+                UpdateDescription.Type.NEW_ISSUE,
+                null,
+                "NPE in login",
+                "alice",
+                Instant.parse("2024-01-15T10:00:00Z"),
+                "Stack trace here");
 
         String result = desc.format("https://github.com/user/repo");
 
@@ -62,12 +62,12 @@ class UpdateDescriptionTest {
     @Test
     void format_newAnswer_containsQuestionTitle() {
         var desc = new UpdateDescription(
-            UpdateDescription.Type.NEW_ANSWER,
-            "How to test Spring Boot?",
-            null,
-            "bob",
-            Instant.parse("2024-01-15T10:00:00Z"),
-            "Use @SpringBootTest");
+                UpdateDescription.Type.NEW_ANSWER,
+                "How to test Spring Boot?",
+                null,
+                "bob",
+                Instant.parse("2024-01-15T10:00:00Z"),
+                "Use @SpringBootTest");
 
         String result = desc.format("https://stackoverflow.com/questions/123/test");
 
@@ -80,12 +80,7 @@ class UpdateDescriptionTest {
     @Test
     void format_newPR_containsCorrectLabel() {
         var desc = new UpdateDescription(
-            UpdateDescription.Type.NEW_PR,
-            null,
-            "Add dark mode",
-            "carol",
-            Instant.now(),
-            "Adds dark mode to UI");
+                UpdateDescription.Type.NEW_PR, null, "Add dark mode", "carol", Instant.now(), "Adds dark mode to UI");
 
         String result = desc.format("https://github.com/user/repo");
 
@@ -97,12 +92,7 @@ class UpdateDescriptionTest {
     @Test
     void format_newComment_containsCorrectLabel() {
         var desc = new UpdateDescription(
-            UpdateDescription.Type.NEW_COMMENT,
-            "Some question",
-            null,
-            "dave",
-            Instant.now(),
-            "Have you tried X?");
+                UpdateDescription.Type.NEW_COMMENT, "Some question", null, "dave", Instant.now(), "Have you tried X?");
 
         String result = desc.format("https://stackoverflow.com/questions/999/q");
 

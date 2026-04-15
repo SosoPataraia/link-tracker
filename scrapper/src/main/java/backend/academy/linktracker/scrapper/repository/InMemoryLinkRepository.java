@@ -35,9 +35,9 @@ public class InMemoryLinkRepository implements LinkRepository {
     public Optional<TrackedLink> findByChatAndUrl(long chatId, String url) {
         List<Long> ids = linksByChatId.getOrDefault(chatId, List.of());
         return ids.stream()
-            .map(linksById::get)
-            .filter(l -> l != null && l.getUrl().equals(url))
-            .findFirst();
+                .map(linksById::get)
+                .filter(l -> l != null && l.getUrl().equals(url))
+                .findFirst();
     }
 
     @Override
@@ -79,12 +79,12 @@ public class InMemoryLinkRepository implements LinkRepository {
     @Override
     public List<TrackedLink> findBatch(int offset, int limit) {
         return linksById.values().stream()
-            .sorted(java.util.Comparator.comparing(
-                TrackedLink::getLastChecked,
-                java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder())))
-            .skip(offset)
-            .limit(limit)
-            .toList();
+                .sorted(java.util.Comparator.comparing(
+                        TrackedLink::getLastChecked,
+                        java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder())))
+                .skip(offset)
+                .limit(limit)
+                .toList();
     }
 
     public boolean existsChat(long chatId) {

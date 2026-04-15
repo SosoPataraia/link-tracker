@@ -48,19 +48,19 @@ class GitHubScrapperIntegrationTest {
     void setUp() {
         linkRepository = new InMemoryLinkRepository();
         var gitHubClient = new GitHubClientImpl(
-            RestClient.builder().baseUrl(wireMock.baseUrl()).build());
+                RestClient.builder().baseUrl(wireMock.baseUrl()).build());
         var soClient = new StackOverflowClientImpl(
-            RestClient.builder().baseUrl(wireMock.baseUrl()).build());
+                RestClient.builder().baseUrl(wireMock.baseUrl()).build());
         service = new LinkCheckerService(linkRepository, gitHubClient, soClient, botClient);
     }
 
     @Test
     void newIssue_formatsMessageWithAllRequiredFields() {
         stubFor(get(urlPathEqualTo("/repos/user/repo/issues"))
-            .willReturn(aResponse()
-                .withStatus(200)
-                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .withBody("""
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("""
                                 [
                                   {
                                     "number": 42,
@@ -73,10 +73,10 @@ class GitHubScrapperIntegrationTest {
                                 """)));
 
         stubFor(get(urlPathEqualTo("/repos/user/repo/pulls"))
-            .willReturn(aResponse()
-                .withStatus(200)
-                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .withBody("[]")));
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("[]")));
 
         linkRepository.save(link(100L, "https://github.com/user/repo"));
 
@@ -87,10 +87,10 @@ class GitHubScrapperIntegrationTest {
 
         String desc = captor.getValue().getDescription();
         assertThat(desc).contains("New Issue");
-        assertThat(desc).contains("NPE in login flow");       // item title
-        assertThat(desc).contains("alice");                    // username
-        assertThat(desc).contains("2024-01-15");               // created_at
-        assertThat(desc).contains("Stack trace");              // preview
+        assertThat(desc).contains("NPE in login flow"); // item title
+        assertThat(desc).contains("alice"); // username
+        assertThat(desc).contains("2024-01-15"); // created_at
+        assertThat(desc).contains("Stack trace"); // preview
         assertThat(captor.getValue().getUrl()).isEqualTo("https://github.com/user/repo");
         assertThat(captor.getValue().getTgChatIds()).containsExactly(100L);
     }
@@ -98,16 +98,16 @@ class GitHubScrapperIntegrationTest {
     @Test
     void newPR_formatsMessageWithAllRequiredFields() {
         stubFor(get(urlPathEqualTo("/repos/user/repo/issues"))
-            .willReturn(aResponse()
-                .withStatus(200)
-                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .withBody("[]")));
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("[]")));
 
         stubFor(get(urlPathEqualTo("/repos/user/repo/pulls"))
-            .willReturn(aResponse()
-                .withStatus(200)
-                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .withBody("""
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("""
                                 [
                                   {
                                     "number": 7,
@@ -137,9 +137,9 @@ class GitHubScrapperIntegrationTest {
     @Test
     void apiUnavailable_doesNotSendUpdate_andDoesNotThrow() {
         stubFor(get(urlPathEqualTo("/repos/user/repo/issues"))
-            .willReturn(aResponse().withStatus(503)));
+                .willReturn(aResponse().withStatus(503)));
         stubFor(get(urlPathEqualTo("/repos/user/repo/pulls"))
-            .willReturn(aResponse().withStatus(503)));
+                .willReturn(aResponse().withStatus(503)));
 
         linkRepository.save(link(100L, "https://github.com/user/repo"));
 
@@ -154,10 +154,10 @@ class GitHubScrapperIntegrationTest {
         String longBody = "A".repeat(300);
 
         stubFor(get(urlPathEqualTo("/repos/user/repo/issues"))
-            .willReturn(aResponse()
-                .withStatus(200)
-                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .withBody("""
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("""
                                 [
                                   {
                                     "number": 1,
@@ -170,10 +170,10 @@ class GitHubScrapperIntegrationTest {
                                 """.formatted(longBody))));
 
         stubFor(get(urlPathEqualTo("/repos/user/repo/pulls"))
-            .willReturn(aResponse()
-                .withStatus(200)
-                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .withBody("[]")));
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("[]")));
 
         linkRepository.save(link(100L, "https://github.com/user/repo"));
 
