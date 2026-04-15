@@ -116,7 +116,7 @@ public class LinkCheckerScheduler {
             try {
                 linkCheckerService.checkLinks(subscribers);
             } catch (Exception e) {
-                log.error("Failed to process url={}: {}", url, e.getMessage(), e);
+                log.error("Failed to process url={}", url, e);
                 failures.add(url);
             }
         });

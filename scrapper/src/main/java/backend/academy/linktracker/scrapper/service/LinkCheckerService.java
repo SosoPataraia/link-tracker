@@ -47,7 +47,7 @@ public class LinkCheckerService {
             try {
                 checkUrl(url, subscribers);
             } catch (Exception e) {
-                log.error("Unhandled error checking url={}: {}", url, e.getMessage(), e);
+                log.error("Unhandled error checking url={}", url, e);
             }
         });
     }
