@@ -19,14 +19,15 @@ spring:
 
 app:
   stackoverflow:
-    key: ${STACKOVERFLOW_KEY} # Use env variable. DO NOT KEEP TOKEN HERE
-    access-token: ${STACKOVERFLOW_ACCESS_KEY} # Use env variable. DO NOT KEEP TOKEN HERE
+    key: ${STACKOVERFLOW_KEY:}
+    access-token: ${STACKOVERFLOW_ACCESS_KEY:}
   github:
-    token: ${GITHUB_TOKEN} # Use env variable. DO NOT KEEP TOKEN HERE
+    token: ${GITHUB_TOKEN:}
   bot:
     base-url: ${BOT_BASE_URL:http://localhost:8080}
   scheduler:
     interval: 60000
     batch-size: 100  # 50–500 per NFR
+    thread-count: 4  # parallel threads per batch (bonus NFR)
   database:
     access-type: SQL

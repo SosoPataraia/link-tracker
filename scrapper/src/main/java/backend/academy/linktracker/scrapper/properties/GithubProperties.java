@@ -13,5 +13,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @NoArgsConstructor
 public class GithubProperties {
 
-    private String token;
+    private String token = "";
 }
