@@ -4,6 +4,15 @@ server:
 spring:
   application:
     name: bot
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    consumer:
+      group-id: bot-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
 
 app:
   telegram:
@@ -13,3 +22,6 @@ app:
     debug: false
   scrapper:
     base-url: ${SCRAPPER_BASE_URL:http://localhost:8081}
+  kafka:
+    topic:
+      link-updates: link-updates

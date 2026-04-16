@@ -6,13 +6,13 @@ import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import backend.academy.linktracker.scrapper.client.BotClient;
 import backend.academy.linktracker.scrapper.client.GitHubClient;
 import backend.academy.linktracker.scrapper.client.StackOverflowClient;
 import backend.academy.linktracker.scrapper.dto.github.IssueItem;
 import backend.academy.linktracker.scrapper.model.TrackedLink;
 import backend.academy.linktracker.scrapper.repository.ChatRepository;
 import backend.academy.linktracker.scrapper.repository.LinkRepository;
+import backend.academy.linktracker.scrapper.sender.NotificationSender;
 import backend.academy.linktracker.scrapper.service.LinkCheckerService;
 import java.time.Instant;
 import java.util.List;
@@ -36,7 +36,7 @@ class BatchProcessingTest {
     ChatRepository chatRepository;
 
     @MockitoBean
-    BotClient botClient;
+    NotificationSender notificationSender;
 
     @MockitoBean
     GitHubClient gitHubClient;
@@ -62,7 +62,6 @@ class BatchProcessingTest {
     void findBatch_returnsStalestLinksFirst() {
         chatRepository.register(1L);
 
-        // Save 3 links with different last_checked times
         var old = savedLink(1L, "https://github.com/user/old-repo", Instant.parse("2024-01-01T00:00:00Z"));
         var mid = savedLink(1L, "https://github.com/user/mid-repo", Instant.parse("2024-06-01T00:00:00Z"));
         var recent = savedLink(1L, "https://github.com/user/new-repo", Instant.parse("2024-12-01T00:00:00Z"));
@@ -99,7 +98,6 @@ class BatchProcessingTest {
         assertThat(firstBatch).hasSize(3);
         assertThat(secondBatch).hasSize(2);
 
-        // No overlap
         var firstUrls = firstBatch.stream().map(TrackedLink::getUrl).toList();
         var secondUrls = secondBatch.stream().map(TrackedLink::getUrl).toList();
         assertThat(firstUrls).doesNotContainAnyElementsOf(secondUrls);
@@ -113,22 +111,19 @@ class BatchProcessingTest {
         savedLink(1L, "https://github.com/user/failing-repo", Instant.EPOCH);
         savedLink(2L, "https://github.com/other/working-repo", Instant.EPOCH);
 
-        // First call throws, second returns a new issue
         when(gitHubClient.getNewIssues("user", "failing-repo", Instant.EPOCH))
-                .thenThrow(new RuntimeException("Simulated API failure"));
+            .thenThrow(new RuntimeException("Simulated API failure"));
         when(gitHubClient.getNewPullRequests("user", "failing-repo", Instant.EPOCH))
-                .thenThrow(new RuntimeException("Simulated API failure"));
+            .thenThrow(new RuntimeException("Simulated API failure"));
 
         when(gitHubClient.getNewIssues("other", "working-repo", Instant.EPOCH))
-                .thenReturn(List.of(issueItem("Working issue", "carol")));
+            .thenReturn(List.of(issueItem("Working issue", "carol")));
         when(gitHubClient.getNewPullRequests("other", "working-repo", Instant.EPOCH))
-                .thenReturn(List.of());
+            .thenReturn(List.of());
 
-        // Should not throw
         linkCheckerService.checkLinks(linkRepository.findAll());
 
-        // Working repo still got processed
-        verify(botClient, atLeast(1)).sendUpdate(any());
+        verify(notificationSender, atLeast(1)).send(any());
     }
 
     @Test

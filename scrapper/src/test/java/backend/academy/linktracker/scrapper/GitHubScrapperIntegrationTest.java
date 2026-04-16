@@ -9,12 +9,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import backend.academy.linktracker.scrapper.client.BotClient;
 import backend.academy.linktracker.scrapper.client.GitHubClientImpl;
 import backend.academy.linktracker.scrapper.client.StackOverflowClientImpl;
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;
 import backend.academy.linktracker.scrapper.model.TrackedLink;
 import backend.academy.linktracker.scrapper.repository.InMemoryLinkRepository;
+import backend.academy.linktracker.scrapper.sender.NotificationSender;
 import backend.academy.linktracker.scrapper.service.LinkCheckerService;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import java.time.Instant;
@@ -39,7 +39,7 @@ class GitHubScrapperIntegrationTest {
     WireMockServer wireMock;
 
     @Mock
-    BotClient botClient;
+    NotificationSender notificationSender;
 
     InMemoryLinkRepository linkRepository;
     LinkCheckerService service;
@@ -48,19 +48,19 @@ class GitHubScrapperIntegrationTest {
     void setUp() {
         linkRepository = new InMemoryLinkRepository();
         var gitHubClient = new GitHubClientImpl(
-                RestClient.builder().baseUrl(wireMock.baseUrl()).build());
+            RestClient.builder().baseUrl(wireMock.baseUrl()).build());
         var soClient = new StackOverflowClientImpl(
-                RestClient.builder().baseUrl(wireMock.baseUrl()).build());
-        service = new LinkCheckerService(linkRepository, gitHubClient, soClient, botClient);
+            RestClient.builder().baseUrl(wireMock.baseUrl()).build());
+        service = new LinkCheckerService(linkRepository, gitHubClient, soClient, notificationSender);
     }
 
     @Test
     void newIssue_formatsMessageWithAllRequiredFields() {
         stubFor(get(urlPathEqualTo("/repos/user/repo/issues"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("""
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .withBody("""
                                 [
                                   {
                                     "number": 42,
@@ -73,24 +73,24 @@ class GitHubScrapperIntegrationTest {
                                 """)));
 
         stubFor(get(urlPathEqualTo("/repos/user/repo/pulls"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("[]")));
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .withBody("[]")));
 
         linkRepository.save(link(100L, "https://github.com/user/repo"));
 
         service.checkLinks(linkRepository.findAll());
 
         var captor = ArgumentCaptor.forClass(LinkUpdate.class);
-        verify(botClient).sendUpdate(captor.capture());
+        verify(notificationSender).send(captor.capture());
 
         String desc = captor.getValue().getDescription();
         assertThat(desc).contains("New Issue");
-        assertThat(desc).contains("NPE in login flow"); // item title
-        assertThat(desc).contains("alice"); // username
-        assertThat(desc).contains("2024-01-15"); // created_at
-        assertThat(desc).contains("Stack trace"); // preview
+        assertThat(desc).contains("NPE in login flow");
+        assertThat(desc).contains("alice");
+        assertThat(desc).contains("2024-01-15");
+        assertThat(desc).contains("Stack trace");
         assertThat(captor.getValue().getUrl()).isEqualTo("https://github.com/user/repo");
         assertThat(captor.getValue().getTgChatIds()).containsExactly(100L);
     }
@@ -98,16 +98,16 @@ class GitHubScrapperIntegrationTest {
     @Test
     void newPR_formatsMessageWithAllRequiredFields() {
         stubFor(get(urlPathEqualTo("/repos/user/repo/issues"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("[]")));
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .withBody("[]")));
 
         stubFor(get(urlPathEqualTo("/repos/user/repo/pulls"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("""
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .withBody("""
                                 [
                                   {
                                     "number": 7,
@@ -124,7 +124,7 @@ class GitHubScrapperIntegrationTest {
         service.checkLinks(linkRepository.findAll());
 
         var captor = ArgumentCaptor.forClass(LinkUpdate.class);
-        verify(botClient).sendUpdate(captor.capture());
+        verify(notificationSender).send(captor.capture());
 
         String desc = captor.getValue().getDescription();
         assertThat(desc).contains("New Pull Request");
@@ -137,16 +137,15 @@ class GitHubScrapperIntegrationTest {
     @Test
     void apiUnavailable_doesNotSendUpdate_andDoesNotThrow() {
         stubFor(get(urlPathEqualTo("/repos/user/repo/issues"))
-                .willReturn(aResponse().withStatus(503)));
+            .willReturn(aResponse().withStatus(503)));
         stubFor(get(urlPathEqualTo("/repos/user/repo/pulls"))
-                .willReturn(aResponse().withStatus(503)));
+            .willReturn(aResponse().withStatus(503)));
 
         linkRepository.save(link(100L, "https://github.com/user/repo"));
 
-        // Must not throw
         service.checkLinks(linkRepository.findAll());
 
-        verify(botClient, never()).sendUpdate(any());
+        verify(notificationSender, never()).send(any());
     }
 
     @Test
@@ -154,10 +153,10 @@ class GitHubScrapperIntegrationTest {
         String longBody = "A".repeat(300);
 
         stubFor(get(urlPathEqualTo("/repos/user/repo/issues"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("""
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .withBody("""
                                 [
                                   {
                                     "number": 1,
@@ -170,23 +169,21 @@ class GitHubScrapperIntegrationTest {
                                 """.formatted(longBody))));
 
         stubFor(get(urlPathEqualTo("/repos/user/repo/pulls"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("[]")));
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .withBody("[]")));
 
         linkRepository.save(link(100L, "https://github.com/user/repo"));
 
         service.checkLinks(linkRepository.findAll());
 
         var captor = ArgumentCaptor.forClass(LinkUpdate.class);
-        verify(botClient).sendUpdate(captor.capture());
+        verify(notificationSender).send(captor.capture());
 
-        // Preview in description should be truncated — 200 chars + "..."
         String desc = captor.getValue().getDescription();
         assertThat(desc).contains("A".repeat(200));
         assertThat(desc).contains("...");
-        // Should NOT contain the full 300 chars
         assertThat(desc).doesNotContain("A".repeat(201));
     }
 

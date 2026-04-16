@@ -8,7 +8,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import backend.academy.linktracker.scrapper.client.BotClient;
 import backend.academy.linktracker.scrapper.client.GitHubClient;
 import backend.academy.linktracker.scrapper.client.StackOverflowClient;
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;
@@ -17,6 +16,7 @@ import backend.academy.linktracker.scrapper.dto.stackoverflow.AnswerItem;
 import backend.academy.linktracker.scrapper.dto.stackoverflow.CommentItem;
 import backend.academy.linktracker.scrapper.model.TrackedLink;
 import backend.academy.linktracker.scrapper.repository.InMemoryLinkRepository;
+import backend.academy.linktracker.scrapper.sender.NotificationSender;
 import backend.academy.linktracker.scrapper.service.LinkCheckerService;
 import java.time.Instant;
 import java.util.List;
@@ -38,7 +38,7 @@ class LinkCheckerServiceTest {
     StackOverflowClient stackOverflowClient;
 
     @Mock
-    BotClient botClient;
+    NotificationSender notificationSender;
 
     InMemoryLinkRepository linkRepository;
     LinkCheckerService service;
@@ -46,7 +46,7 @@ class LinkCheckerServiceTest {
     @BeforeEach
     void setUp() {
         linkRepository = new InMemoryLinkRepository();
-        service = new LinkCheckerService(linkRepository, gitHubClient, stackOverflowClient, botClient);
+        service = new LinkCheckerService(linkRepository, gitHubClient, stackOverflowClient, notificationSender);
     }
 
     @Test
@@ -60,7 +60,7 @@ class LinkCheckerServiceTest {
         service.checkLinks(linkRepository.findAll());
 
         var captor = ArgumentCaptor.forClass(LinkUpdate.class);
-        verify(botClient).sendUpdate(captor.capture());
+        verify(notificationSender).send(captor.capture());
         assertThat(captor.getValue().getUrl()).isEqualTo("https://github.com/user/repo");
         assertThat(captor.getValue().getTgChatIds()).containsExactly(100L);
     }
@@ -71,12 +71,12 @@ class LinkCheckerServiceTest {
 
         when(gitHubClient.getNewIssues(anyString(), anyString(), any())).thenReturn(List.of());
         when(gitHubClient.getNewPullRequests(anyString(), anyString(), any()))
-                .thenReturn(List.of(issueItem("Add dark mode", "bob", Instant.parse("2024-01-15T10:00:00Z"), "desc")));
+            .thenReturn(List.of(issueItem("Add dark mode", "bob", Instant.parse("2024-01-15T10:00:00Z"), "desc")));
 
         service.checkLinks(linkRepository.findAll());
 
         var captor = ArgumentCaptor.forClass(LinkUpdate.class);
-        verify(botClient).sendUpdate(captor.capture());
+        verify(notificationSender).send(captor.capture());
         assertThat(captor.getValue().getDescription()).contains("New Pull Request");
     }
 
@@ -89,7 +89,7 @@ class LinkCheckerServiceTest {
 
         service.checkLinks(linkRepository.findAll());
 
-        verify(botClient, never()).sendUpdate(any());
+        verify(notificationSender, never()).send(any());
     }
 
     @Test
@@ -98,7 +98,7 @@ class LinkCheckerServiceTest {
         linkRepository.save(link(999L, "https://github.com/other/other"));
 
         when(gitHubClient.getNewIssues("user", "repo", Instant.EPOCH))
-                .thenReturn(List.of(issueItem("Issue", "alice", Instant.parse("2024-01-15T10:00:00Z"), "body")));
+            .thenReturn(List.of(issueItem("Issue", "alice", Instant.parse("2024-01-15T10:00:00Z"), "body")));
         when(gitHubClient.getNewPullRequests("user", "repo", Instant.EPOCH)).thenReturn(List.of());
         when(gitHubClient.getNewIssues("other", "other", Instant.EPOCH)).thenReturn(List.of());
         when(gitHubClient.getNewPullRequests("other", "other", Instant.EPOCH)).thenReturn(List.of());
@@ -106,7 +106,7 @@ class LinkCheckerServiceTest {
         service.checkLinks(linkRepository.findAll());
 
         var captor = ArgumentCaptor.forClass(LinkUpdate.class);
-        verify(botClient).sendUpdate(captor.capture());
+        verify(notificationSender).send(captor.capture());
         assertThat(captor.getValue().getTgChatIds()).containsExactly(100L);
         assertThat(captor.getValue().getTgChatIds()).doesNotContain(999L);
     }
@@ -117,13 +117,13 @@ class LinkCheckerServiceTest {
 
         when(stackOverflowClient.getQuestion(12345L)).thenReturn(Optional.empty());
         when(stackOverflowClient.getNewAnswers(anyLong(), any()))
-                .thenReturn(List.of(answerItem("charlie", 1705312200L, "Use JUnit 5")));
+            .thenReturn(List.of(answerItem("charlie", 1705312200L, "Use JUnit 5")));
         when(stackOverflowClient.getNewComments(anyLong(), any())).thenReturn(List.of());
 
         service.checkLinks(linkRepository.findAll());
 
         var captor = ArgumentCaptor.forClass(LinkUpdate.class);
-        verify(botClient).sendUpdate(captor.capture());
+        verify(notificationSender).send(captor.capture());
         assertThat(captor.getValue().getDescription()).contains("New Answer");
         assertThat(captor.getValue().getDescription()).contains("charlie");
     }
@@ -135,12 +135,12 @@ class LinkCheckerServiceTest {
         when(stackOverflowClient.getQuestion(12345L)).thenReturn(Optional.empty());
         when(stackOverflowClient.getNewAnswers(anyLong(), any())).thenReturn(List.of());
         when(stackOverflowClient.getNewComments(anyLong(), any()))
-                .thenReturn(List.of(commentItem("dave", 1705312200L, "Thanks!")));
+            .thenReturn(List.of(commentItem("dave", 1705312200L, "Thanks!")));
 
         service.checkLinks(linkRepository.findAll());
 
         var captor = ArgumentCaptor.forClass(LinkUpdate.class);
-        verify(botClient).sendUpdate(captor.capture());
+        verify(notificationSender).send(captor.capture());
         assertThat(captor.getValue().getDescription()).contains("New Comment");
     }
 
@@ -151,9 +151,8 @@ class LinkCheckerServiceTest {
         when(gitHubClient.getNewIssues(anyString(), anyString(), any())).thenReturn(List.of());
         when(gitHubClient.getNewPullRequests(anyString(), anyString(), any())).thenReturn(List.of());
 
-        // Should not throw
         service.checkLinks(linkRepository.findAll());
-        verify(botClient, never()).sendUpdate(any());
+        verify(notificationSender, never()).send(any());
     }
 
     @Test
@@ -169,14 +168,12 @@ class LinkCheckerServiceTest {
         assertThat(updated.getLastChecked()).isNotNull();
     }
 
-    // --- helpers ---
-
     private TrackedLink link(long chatId, String url) {
         var l = new TrackedLink();
         l.setChatId(chatId);
         l.setUrl(url);
         l.setTags(List.of());
-        l.setLastChecked(null); // null → service uses Instant.EPOCH as since
+        l.setLastChecked(null);
         l.setLastUpdated(Instant.now());
         return l;
     }

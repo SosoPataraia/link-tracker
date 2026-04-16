@@ -9,12 +9,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import backend.academy.linktracker.scrapper.client.BotClient;
 import backend.academy.linktracker.scrapper.client.GitHubClientImpl;
 import backend.academy.linktracker.scrapper.client.StackOverflowClientImpl;
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;
 import backend.academy.linktracker.scrapper.model.TrackedLink;
 import backend.academy.linktracker.scrapper.repository.InMemoryLinkRepository;
+import backend.academy.linktracker.scrapper.sender.NotificationSender;
 import backend.academy.linktracker.scrapper.service.LinkCheckerService;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import java.time.Instant;
@@ -39,7 +39,7 @@ class StackOverflowScrapperIntegrationTest {
     WireMockServer wireMock;
 
     @Mock
-    BotClient botClient;
+    NotificationSender notificationSender;
 
     InMemoryLinkRepository linkRepository;
     LinkCheckerService service;
@@ -48,20 +48,19 @@ class StackOverflowScrapperIntegrationTest {
     void setUp() {
         linkRepository = new InMemoryLinkRepository();
         var gitHubClient = new GitHubClientImpl(
-                RestClient.builder().baseUrl(wireMock.baseUrl()).build());
+            RestClient.builder().baseUrl(wireMock.baseUrl()).build());
         var soClient = new StackOverflowClientImpl(
-                RestClient.builder().baseUrl(wireMock.baseUrl()).build());
-        service = new LinkCheckerService(linkRepository, gitHubClient, soClient, botClient);
+            RestClient.builder().baseUrl(wireMock.baseUrl()).build());
+        service = new LinkCheckerService(linkRepository, gitHubClient, soClient, notificationSender);
     }
 
     @Test
     void newAnswer_formatsMessageWithAllRequiredFields() {
-        // Question metadata
         stubFor(get(urlPathEqualTo("/questions/12345"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("""
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .withBody("""
                                 {
                                   "items": [
                                     {
@@ -74,12 +73,11 @@ class StackOverflowScrapperIntegrationTest {
                                 }
                                 """)));
 
-        // New answer
         stubFor(get(urlPathEqualTo("/questions/12345/answers"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("""
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .withBody("""
                                 {
                                   "items": [
                                     {
@@ -92,34 +90,33 @@ class StackOverflowScrapperIntegrationTest {
                                 }
                                 """)));
 
-        // No comments
         stubFor(get(urlPathEqualTo("/questions/12345/comments"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("{\"items\": []}")));
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .withBody("{\"items\": []}")));
 
         linkRepository.save(link(100L, "https://stackoverflow.com/questions/12345/how-to-test"));
 
         service.checkLinks(linkRepository.findAll());
 
         var captor = ArgumentCaptor.forClass(LinkUpdate.class);
-        verify(botClient).sendUpdate(captor.capture());
+        verify(notificationSender).send(captor.capture());
 
         String desc = captor.getValue().getDescription();
         assertThat(desc).contains("New Answer");
-        assertThat(desc).contains("How to test Spring Boot apps?"); // question title
-        assertThat(desc).contains("alice"); // username
-        assertThat(desc).contains("Use @SpringBootTest"); // preview
+        assertThat(desc).contains("How to test Spring Boot apps?");
+        assertThat(desc).contains("alice");
+        assertThat(desc).contains("Use @SpringBootTest");
     }
 
     @Test
     void newComment_formatsMessageCorrectly() {
         stubFor(get(urlPathEqualTo("/questions/12345"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("""
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .withBody("""
                                 {
                                   "items": [
                                     {
@@ -133,16 +130,16 @@ class StackOverflowScrapperIntegrationTest {
                                 """)));
 
         stubFor(get(urlPathEqualTo("/questions/12345/answers"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("{\"items\": []}")));
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .withBody("{\"items\": []}")));
 
         stubFor(get(urlPathEqualTo("/questions/12345/comments"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("""
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .withBody("""
                                 {
                                   "items": [
                                     {
@@ -160,7 +157,7 @@ class StackOverflowScrapperIntegrationTest {
         service.checkLinks(linkRepository.findAll());
 
         var captor = ArgumentCaptor.forClass(LinkUpdate.class);
-        verify(botClient).sendUpdate(captor.capture());
+        verify(notificationSender).send(captor.capture());
 
         String desc = captor.getValue().getDescription();
         assertThat(desc).contains("New Comment");
@@ -172,15 +169,15 @@ class StackOverflowScrapperIntegrationTest {
     void soApiUnavailable_doesNotSendUpdate_andDoesNotThrow() {
         stubFor(get(urlPathEqualTo("/questions/12345")).willReturn(aResponse().withStatus(503)));
         stubFor(get(urlPathEqualTo("/questions/12345/answers"))
-                .willReturn(aResponse().withStatus(503)));
+            .willReturn(aResponse().withStatus(503)));
         stubFor(get(urlPathEqualTo("/questions/12345/comments"))
-                .willReturn(aResponse().withStatus(503)));
+            .willReturn(aResponse().withStatus(503)));
 
         linkRepository.save(link(100L, "https://stackoverflow.com/questions/12345/test"));
 
         service.checkLinks(linkRepository.findAll());
 
-        verify(botClient, never()).sendUpdate(any());
+        verify(notificationSender, never()).send(any());
     }
 
     private TrackedLink link(long chatId, String url) {
