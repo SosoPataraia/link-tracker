@@ -103,12 +103,22 @@ docker compose down -v
 docker compose up -d postgresql
 ```
 
-## HW-4 Notes
 
-**FR-2.1** — Reacts to new Issues, PRs (GitHub) and new answers, comments (StackOverflow).
+## Kafka Topic Configuration
 
-**FR-2.2** — Messages include: title, username, creation time, preview up to 200 chars.
+Topics are created programmatically via Spring Kafka `NewTopic` beans on application startup.
 
-**NFR-1.1** — Batch processing ordered by `last_checked ASC NULLS FIRST`, batch size configurable.
+### `link-updates`
+| Setting | Value | Why |
+|---------|-------|-----|
+| Partitions | 3 | Allows up to 3 bot instances to consume in parallel |
+| Replication factor | 3 | Every message stored on all 3 brokers — survives 2 broker failures |
+| `retention.ms` | 604800000 (7 days) | Enough time for manual inspection if bot is down for a while |
+| `min.insync.replicas` | 2 | A write is only confirmed when 2 out of 3 brokers have it — prevents data loss |
 
-**NFR-1.2 (bonus)** — Each batch split into `thread-count` sublists processed in parallel. Per-link errors are isolated.
+### `link-updates.DLT`
+| Setting | Value | Why |
+|---------|-------|-----|
+| Partitions | 3 | Matches main topic |
+| Replication factor | 3 | Dead letters are important for debugging — keep them safe |
+| `retention.ms` | 2592000000 (30 days) | Longer retention — these need manual review and shouldn't expire quickly |
