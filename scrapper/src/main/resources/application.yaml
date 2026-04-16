@@ -16,6 +16,13 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.type.mapping: linkUpdate:backend.academy.linktracker.scrapper.dto.LinkUpdate
 
 app:
   stackoverflow:
@@ -31,3 +38,9 @@ app:
     thread-count: 4  # parallel threads per batch (bonus NFR)
   database:
     access-type: SQL
+  notification:
+    transport: kafka  # or 'http' for synchronous mode
+    kafka:
+      topic:
+        link-updates: link-updates
+        link-updates-dlt: link-updates.DLT

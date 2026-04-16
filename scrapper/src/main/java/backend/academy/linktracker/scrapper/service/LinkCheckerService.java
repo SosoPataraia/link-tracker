@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import backend.academy.linktracker.scrapper.sender.NotificationSender;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,7 +35,7 @@ public class LinkCheckerService {
     private final LinkRepository linkRepository;
     private final GitHubClient gitHubClient;
     private final StackOverflowClient stackOverflowClient;
-    private final BotClient botClient;
+    private final NotificationSender notificationSender;
 
     /**
      * Checks all links and sends updates. Called by the scheduler.
@@ -80,7 +81,7 @@ public class LinkCheckerService {
 
             for (UpdateDescription desc : updates) {
                 var linkUpdate = new LinkUpdate(representativeLinkId, url, desc.format(url), chatIds);
-                botClient.sendUpdate(linkUpdate);
+                notificationSender.send(linkUpdate);
                 log.info("Sent update type={} url={} chatIds={}", desc.getType(), url, chatIds);
             }
         }
