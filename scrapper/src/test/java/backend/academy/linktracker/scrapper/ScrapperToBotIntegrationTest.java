@@ -88,17 +88,16 @@ class ScrapperToBotIntegrationTest {
         user.setLogin("testuser");
         issue.setUser(user);
 
-        when(gitHubClient.getNewIssues(anyString(), anyString(), any()))
-            .thenReturn(List.of(issue));
-        when(gitHubClient.getNewPullRequests(anyString(), anyString(), any()))
-            .thenReturn(List.of());
+        when(gitHubClient.getNewIssues(anyString(), anyString(), any())).thenReturn(List.of(issue));
+        when(gitHubClient.getNewPullRequests(anyString(), anyString(), any())).thenReturn(List.of());
 
-        String bootstrapServers = kafkaTemplate.getProducerFactory()
-            .getConfigurationProperties()
-            .get(org.apache.kafka.clients.producer.ProducerConfig.BOOTSTRAP_SERVERS_CONFIG)
-            .toString()
-            .replaceAll("[\\[\\]]", "")
-            .replace("PLAINTEXT://", "");
+        String bootstrapServers = kafkaTemplate
+                .getProducerFactory()
+                .getConfigurationProperties()
+                .get(org.apache.kafka.clients.producer.ProducerConfig.BOOTSTRAP_SERVERS_CONFIG)
+                .toString()
+                .replaceAll("[\\[\\]]", "")
+                .replace("PLAINTEXT://", "");
 
         List<String> receivedMessages = new CopyOnWriteArrayList<>();
         Map<String, Object> consumerProps = new HashMap<>();

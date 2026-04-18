@@ -48,19 +48,19 @@ class StackOverflowScrapperIntegrationTest {
     void setUp() {
         linkRepository = new InMemoryLinkRepository();
         var gitHubClient = new GitHubClientImpl(
-            RestClient.builder().baseUrl(wireMock.baseUrl()).build());
+                RestClient.builder().baseUrl(wireMock.baseUrl()).build());
         var soClient = new StackOverflowClientImpl(
-            RestClient.builder().baseUrl(wireMock.baseUrl()).build());
+                RestClient.builder().baseUrl(wireMock.baseUrl()).build());
         service = new LinkCheckerService(linkRepository, gitHubClient, soClient, notificationSender);
     }
 
     @Test
     void newAnswer_formatsMessageWithAllRequiredFields() {
         stubFor(get(urlPathEqualTo("/questions/12345"))
-            .willReturn(aResponse()
-                .withStatus(200)
-                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .withBody("""
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("""
                                 {
                                   "items": [
                                     {
@@ -74,10 +74,10 @@ class StackOverflowScrapperIntegrationTest {
                                 """)));
 
         stubFor(get(urlPathEqualTo("/questions/12345/answers"))
-            .willReturn(aResponse()
-                .withStatus(200)
-                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .withBody("""
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("""
                                 {
                                   "items": [
                                     {
@@ -91,10 +91,10 @@ class StackOverflowScrapperIntegrationTest {
                                 """)));
 
         stubFor(get(urlPathEqualTo("/questions/12345/comments"))
-            .willReturn(aResponse()
-                .withStatus(200)
-                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .withBody("{\"items\": []}")));
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("{\"items\": []}")));
 
         linkRepository.save(link(100L, "https://stackoverflow.com/questions/12345/how-to-test"));
 
@@ -113,10 +113,10 @@ class StackOverflowScrapperIntegrationTest {
     @Test
     void newComment_formatsMessageCorrectly() {
         stubFor(get(urlPathEqualTo("/questions/12345"))
-            .willReturn(aResponse()
-                .withStatus(200)
-                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .withBody("""
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("""
                                 {
                                   "items": [
                                     {
@@ -130,16 +130,16 @@ class StackOverflowScrapperIntegrationTest {
                                 """)));
 
         stubFor(get(urlPathEqualTo("/questions/12345/answers"))
-            .willReturn(aResponse()
-                .withStatus(200)
-                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .withBody("{\"items\": []}")));
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("{\"items\": []}")));
 
         stubFor(get(urlPathEqualTo("/questions/12345/comments"))
-            .willReturn(aResponse()
-                .withStatus(200)
-                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .withBody("""
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("""
                                 {
                                   "items": [
                                     {
@@ -169,9 +169,9 @@ class StackOverflowScrapperIntegrationTest {
     void soApiUnavailable_doesNotSendUpdate_andDoesNotThrow() {
         stubFor(get(urlPathEqualTo("/questions/12345")).willReturn(aResponse().withStatus(503)));
         stubFor(get(urlPathEqualTo("/questions/12345/answers"))
-            .willReturn(aResponse().withStatus(503)));
+                .willReturn(aResponse().withStatus(503)));
         stubFor(get(urlPathEqualTo("/questions/12345/comments"))
-            .willReturn(aResponse().withStatus(503)));
+                .willReturn(aResponse().withStatus(503)));
 
         linkRepository.save(link(100L, "https://stackoverflow.com/questions/12345/test"));
 

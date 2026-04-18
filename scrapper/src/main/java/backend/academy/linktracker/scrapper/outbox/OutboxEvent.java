@@ -19,6 +19,8 @@ public class OutboxEvent {
     private Instant processedAt;
 
     public enum OutboxStatus {
-        PENDING, PROCESSED, FAILED
+        PENDING,
+        PROCESSED,
+        FAILED
     }
 }

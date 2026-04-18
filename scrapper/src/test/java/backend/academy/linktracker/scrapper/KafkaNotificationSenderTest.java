@@ -18,9 +18,7 @@ import org.springframework.test.context.TestPropertySource;
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 @ActiveProfiles("test")
-@TestPropertySource(properties = {
-    "app.notification.transport=kafka"
-})
+@TestPropertySource(properties = {"app.notification.transport=kafka"})
 class KafkaNotificationSenderTest {
 
     @Autowired

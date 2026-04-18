@@ -53,8 +53,7 @@ class TestcontainersConfiguration {
     @Bean
     SchemaRegistryClient mockSchemaRegistryClient() throws Exception {
         var client = new MockSchemaRegistryClient();
-        client.register("link-updates-value",
-            new AvroSchema(LinkUpdateEvent.getClassSchema()));
+        client.register("link-updates-value", new AvroSchema(LinkUpdateEvent.getClassSchema()));
         return client;
     }
 
@@ -70,8 +69,7 @@ class TestcontainersConfiguration {
 
     @Bean
     KafkaTemplate<String, LinkUpdateEvent> avroTestKafkaTemplate(
-        KafkaContainer kafkaContainer,
-        SchemaRegistryClient schemaRegistryClient) {
+            KafkaContainer kafkaContainer, SchemaRegistryClient schemaRegistryClient) {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -81,8 +79,7 @@ class TestcontainersConfiguration {
         serializer.configure(props, false);
 
         var factory = new DefaultKafkaProducerFactory<String, LinkUpdateEvent>(props);
-        factory.setValueSerializer((topic, data) ->
-            serializer.serialize(topic, data));
+        factory.setValueSerializer((topic, data) -> serializer.serialize(topic, data));
         return new KafkaTemplate<>(factory);
     }
 }

@@ -1,6 +1,5 @@
 package backend.academy.linktracker.scrapper.service;
 
-import backend.academy.linktracker.scrapper.client.BotClient;
 import backend.academy.linktracker.scrapper.client.GitHubClient;
 import backend.academy.linktracker.scrapper.client.StackOverflowClient;
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;
@@ -10,6 +9,7 @@ import backend.academy.linktracker.scrapper.dto.stackoverflow.CommentItem;
 import backend.academy.linktracker.scrapper.dto.stackoverflow.QuestionItem;
 import backend.academy.linktracker.scrapper.model.TrackedLink;
 import backend.academy.linktracker.scrapper.repository.LinkRepository;
+import backend.academy.linktracker.scrapper.sender.NotificationSender;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import backend.academy.linktracker.scrapper.sender.NotificationSender;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

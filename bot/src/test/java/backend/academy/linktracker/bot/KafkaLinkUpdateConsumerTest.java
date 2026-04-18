@@ -37,15 +37,15 @@ class KafkaLinkUpdateConsumerTest {
     @Test
     void validMessage_isConsumedAndHandled() {
         var event = LinkUpdateEvent.newBuilder()
-            .setId(1L)
-            .setUrl("https://github.com/user/repo")
-            .setDescription("New issue")
-            .setTgChatIds(List.of(100L, 200L))
-            .build();
+                .setId(1L)
+                .setUrl("https://github.com/user/repo")
+                .setDescription("New issue")
+                .setTgChatIds(List.of(100L, 200L))
+                .build();
 
         avroTestKafkaTemplate.send("link-updates", event);
 
         await().atMost(Duration.ofSeconds(30))
-            .untilAsserted(() -> verify(notificationHandler).handleUpdate(any(LinkUpdate.class)));
+                .untilAsserted(() -> verify(notificationHandler).handleUpdate(any(LinkUpdate.class)));
     }
 }

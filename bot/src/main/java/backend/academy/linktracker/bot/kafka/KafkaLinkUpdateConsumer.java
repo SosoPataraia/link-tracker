@@ -17,22 +17,20 @@ public class KafkaLinkUpdateConsumer {
     private final UpdateNotificationHandler notificationHandler;
 
     @KafkaListener(
-        topics = "${app.kafka.topic.link-updates:link-updates}",
-        groupId = "${spring.kafka.consumer.group-id:bot-group}",
-        containerFactory = "kafkaListenerContainerFactory"
-    )
+            topics = "${app.kafka.topic.link-updates:link-updates}",
+            groupId = "${spring.kafka.consumer.group-id:bot-group}",
+            containerFactory = "kafkaListenerContainerFactory")
     public void consume(LinkUpdateEvent event) {
         log.atInfo()
-            .addKeyValue("url", event.getUrl())
-            .addKeyValue("chatIds", event.getTgChatIds())
-            .log("kafka.update.received");
+                .addKeyValue("url", event.getUrl())
+                .addKeyValue("chatIds", event.getTgChatIds())
+                .log("kafka.update.received");
 
         var update = new LinkUpdate(
-            event.getId(),
-            event.getUrl().toString(),
-            event.getDescription() != null ? event.getDescription().toString() : null,
-            new ArrayList<>(event.getTgChatIds())
-        );
+                event.getId(),
+                event.getUrl().toString(),
+                event.getDescription() != null ? event.getDescription().toString() : null,
+                new ArrayList<>(event.getTgChatIds()));
         notificationHandler.handleUpdate(update);
     }
 }

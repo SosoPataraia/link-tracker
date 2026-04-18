@@ -65,18 +65,21 @@ cd bot
 Docker Desktop must be running.
 
 ### All scrapper tests:
+
 ```bash
 .\mvnw test -pl scrapper -am        # Windows
 ./mvnw test -pl scrapper -am        # Linux/macOS
 ```
 
 ### All bot tests:
+
 ```bash
 cd bot
 ..\mvnw test
 ```
 
 ### Integration test — Scrapper → Kafka → Bot:
+
 ```bash
 cd scrapper
 ..\mvnw test -Dtest=ScrapperToBotIntegrationTest
@@ -118,14 +121,14 @@ Supported links: `github.com/{owner}/{repo}` and `stackoverflow.com/questions/{i
 
 `scrapper/src/main/resources/application.yaml`:
 
-|              Property               | Default |          Description           |
-|-------------------------------------|---------|--------------------------------|
-| `app.database.access-type`          | `SQL`   | `SQL` or `ORM`                 |
-| `app.notification.transport`        | `kafka` | `kafka` or `http`              |
-| `app.kafka.consumer.retry-attempts` | `3`     | Retry attempts before DLQ      |
-| `app.scheduler.interval`            | `60000` | Polling interval ms            |
-| `app.scheduler.batch-size`          | `100`   | Links per tick (50–500)        |
-| `app.scheduler.thread-count`        | `4`     | Parallel threads per batch     |
+|              Property               | Default |        Description         |
+|-------------------------------------|---------|----------------------------|
+| `app.database.access-type`          | `SQL`   | `SQL` or `ORM`             |
+| `app.notification.transport`        | `kafka` | `kafka` or `http`          |
+| `app.kafka.consumer.retry-attempts` | `3`     | Retry attempts before DLQ  |
+| `app.scheduler.interval`            | `60000` | Polling interval ms        |
+| `app.scheduler.batch-size`          | `100`   | Links per tick (50–500)    |
+| `app.scheduler.thread-count`        | `4`     | Parallel threads per batch |
 
 ## Error Handling (DLQ)
 
@@ -140,19 +143,21 @@ The bot consumer handles errors in three categories:
 Topics are created programmatically via Spring Kafka `NewTopic` beans on application startup.
 
 ### `link-updates`
-| Setting | Value | Why |
-|---------|-------|-----|
-| Partitions | 3 | Allows up to 3 bot instances to consume in parallel |
-| Replication factor | 3 | Every message stored on all 3 brokers — survives 2 broker failures |
-| `retention.ms` | 604800000 (7 days) | Enough time for manual inspection if bot is down for a while |
-| `min.insync.replicas` | 2 | A write is only confirmed when 2 out of 3 brokers have it — prevents data loss |
+
+|        Setting        |       Value        |                                      Why                                       |
+|-----------------------|--------------------|--------------------------------------------------------------------------------|
+| Partitions            | 3                  | Allows up to 3 bot instances to consume in parallel                            |
+| Replication factor    | 3                  | Every message stored on all 3 brokers — survives 2 broker failures             |
+| `retention.ms`        | 604800000 (7 days) | Enough time for manual inspection if bot is down for a while                   |
+| `min.insync.replicas` | 2                  | A write is only confirmed when 2 out of 3 brokers have it — prevents data loss |
 
 ### `link-updates.DLT`
-| Setting | Value | Why |
-|---------|-------|-----|
-| Partitions | 3 | Matches main topic |
-| Replication factor | 3 | Dead letters are important for debugging — keep them safe |
-| `retention.ms` | 2592000000 (30 days) | Longer retention — these need manual review and shouldn't expire quickly |
+
+|      Setting       |        Value         |                                   Why                                    |
+|--------------------|----------------------|--------------------------------------------------------------------------|
+| Partitions         | 3                    | Matches main topic                                                       |
+| Replication factor | 3                    | Dead letters are important for debugging — keep them safe                |
+| `retention.ms`     | 2592000000 (30 days) | Longer retention — these need manual review and shouldn't expire quickly |
 
 ## Troubleshooting
 
@@ -173,3 +178,4 @@ The `scrapper` database has tables but no Liquibase changelog. Clean solution:
 docker compose down -v
 docker compose up -d
 ```
+

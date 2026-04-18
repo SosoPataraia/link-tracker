@@ -112,14 +112,14 @@ class BatchProcessingTest {
         savedLink(2L, "https://github.com/other/working-repo", Instant.EPOCH);
 
         when(gitHubClient.getNewIssues("user", "failing-repo", Instant.EPOCH))
-            .thenThrow(new RuntimeException("Simulated API failure"));
+                .thenThrow(new RuntimeException("Simulated API failure"));
         when(gitHubClient.getNewPullRequests("user", "failing-repo", Instant.EPOCH))
-            .thenThrow(new RuntimeException("Simulated API failure"));
+                .thenThrow(new RuntimeException("Simulated API failure"));
 
         when(gitHubClient.getNewIssues("other", "working-repo", Instant.EPOCH))
-            .thenReturn(List.of(issueItem("Working issue", "carol")));
+                .thenReturn(List.of(issueItem("Working issue", "carol")));
         when(gitHubClient.getNewPullRequests("other", "working-repo", Instant.EPOCH))
-            .thenReturn(List.of());
+                .thenReturn(List.of());
 
         linkCheckerService.checkLinks(linkRepository.findAll());
 

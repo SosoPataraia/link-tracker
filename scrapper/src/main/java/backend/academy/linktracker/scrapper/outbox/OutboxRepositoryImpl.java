@@ -17,53 +17,57 @@ public class OutboxRepositoryImpl implements OutboxRepository {
 
     @Override
     public void save(OutboxEvent event) {
-        jdbcClient.sql("""
+        jdbcClient
+                .sql("""
                 INSERT INTO outbox_events (topic, key, payload, status)
                 VALUES (:topic, :key, :payload, :status)
                 """)
-            .param("topic", event.getTopic())
-            .param("key", event.getKey())
-            .param("payload", event.getPayload())
-            .param("status", OutboxEvent.OutboxStatus.PENDING.name())
-            .update();
+                .param("topic", event.getTopic())
+                .param("key", event.getKey())
+                .param("payload", event.getPayload())
+                .param("status", OutboxEvent.OutboxStatus.PENDING.name())
+                .update();
     }
 
     @Override
     public List<OutboxEvent> findPending(int limit) {
-        return jdbcClient.sql("""
+        return jdbcClient
+                .sql("""
                 SELECT id, topic, key, payload, status, created_at, processed_at
                 FROM outbox_events
                 WHERE status = 'PENDING'
                 ORDER BY created_at ASC
                 LIMIT :limit
                 """)
-            .param("limit", limit)
-            .query((rs, rowNum) -> mapRow(rs))
-            .list();
+                .param("limit", limit)
+                .query((rs, rowNum) -> mapRow(rs))
+                .list();
     }
 
     @Override
     public void markProcessed(long id) {
-        jdbcClient.sql("""
+        jdbcClient
+                .sql("""
                 UPDATE outbox_events
                 SET status = 'PROCESSED', processed_at = :now
                 WHERE id = :id
                 """)
-            .param("now", Timestamp.from(Instant.now()))
-            .param("id", id)
-            .update();
+                .param("now", Timestamp.from(Instant.now()))
+                .param("id", id)
+                .update();
     }
 
     @Override
     public void markFailed(long id) {
-        jdbcClient.sql("""
+        jdbcClient
+                .sql("""
                 UPDATE outbox_events
                 SET status = 'FAILED', processed_at = :now
                 WHERE id = :id
                 """)
-            .param("now", Timestamp.from(Instant.now()))
-            .param("id", id)
-            .update();
+                .param("now", Timestamp.from(Instant.now()))
+                .param("id", id)
+                .update();
     }
 
     private OutboxEvent mapRow(ResultSet rs) throws SQLException {

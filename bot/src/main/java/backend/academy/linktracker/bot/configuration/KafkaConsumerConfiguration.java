@@ -44,7 +44,7 @@ public class KafkaConsumerConfiguration {
 
     @Bean
     public ConsumerFactory<String, Object> consumerFactory(
-        @Autowired(required = false) @Nullable SchemaRegistryClient schemaRegistryClient) {
+            @Autowired(required = false) @Nullable SchemaRegistryClient schemaRegistryClient) {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
@@ -74,27 +74,27 @@ public class KafkaConsumerConfiguration {
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory(
-        ConsumerFactory<String, Object> consumerFactory,
-        KafkaTemplate<String, String> dltKafkaTemplate) {
+            ConsumerFactory<String, Object> consumerFactory, KafkaTemplate<String, String> dltKafkaTemplate) {
 
         var factory = new ConcurrentKafkaListenerContainerFactory<String, Object>();
         factory.setConsumerFactory(consumerFactory);
 
         int retryAttempts = kafkaProperties.getConsumer().getRetryAttempts();
 
-        var recoverer = new DeadLetterPublishingRecoverer(dltKafkaTemplate,
-            (record, ex) -> {
-                log.error("Message sent to DLT after {} retries. topic={} key={} error={}",
-                    retryAttempts, record.topic(), record.key(), ex.getMessage());
-                return new org.apache.kafka.common.TopicPartition(
-                    record.topic() + ".DLT", record.partition());
-            });
+        var recoverer = new DeadLetterPublishingRecoverer(dltKafkaTemplate, (record, ex) -> {
+            log.error(
+                    "Message sent to DLT after {} retries. topic={} key={} error={}",
+                    retryAttempts,
+                    record.topic(),
+                    record.key(),
+                    ex.getMessage());
+            return new org.apache.kafka.common.TopicPartition(record.topic() + ".DLT", record.partition());
+        });
 
-        var errorHandler = new DefaultErrorHandler(recoverer,
-            new FixedBackOff(1000L, retryAttempts - 1L));
+        var errorHandler = new DefaultErrorHandler(recoverer, new FixedBackOff(1000L, retryAttempts - 1L));
 
         errorHandler.addNotRetryableExceptions(
-            org.springframework.kafka.support.serializer.DeserializationException.class);
+                org.springframework.kafka.support.serializer.DeserializationException.class);
 
         factory.setCommonErrorHandler(errorHandler);
         return factory;

@@ -67,12 +67,14 @@ class OutboxNotificationSenderTest {
         var update = new LinkUpdate(1L, "https://github.com/user/repo", "Test", List.of(100L));
         notificationSender.send(update);
 
-        var future = new java.util.concurrent.CompletableFuture<org.springframework.kafka.support.SendResult<String, backend.academy.linktracker.avro.LinkUpdateEvent>>();
+        var future = new java.util.concurrent.CompletableFuture<
+                org.springframework.kafka.support.SendResult<
+                        String, backend.academy.linktracker.avro.LinkUpdateEvent>>();
         future.complete(null);
         org.mockito.Mockito.when(avroKafkaTemplate.send(any(), any(), any())).thenReturn(future);
 
         var poller = new backend.academy.linktracker.scrapper.outbox.OutboxPoller(
-            outboxRepository, avroKafkaTemplate, new ObjectMapper());
+                outboxRepository, avroKafkaTemplate, new ObjectMapper());
         poller.poll();
 
         List<OutboxEvent> pending = outboxRepository.findPending(10);
@@ -87,19 +89,19 @@ class OutboxNotificationSenderTest {
         notificationSender.send(update);
 
         org.mockito.Mockito.when(avroKafkaTemplate.send(any(), any(), any()))
-            .thenThrow(new RuntimeException("Kafka unavailable"));
+                .thenThrow(new RuntimeException("Kafka unavailable"));
 
         var poller = new backend.academy.linktracker.scrapper.outbox.OutboxPoller(
-            outboxRepository, avroKafkaTemplate, new ObjectMapper());
+                outboxRepository, avroKafkaTemplate, new ObjectMapper());
         poller.poll();
 
         List<OutboxEvent> pending = outboxRepository.findPending(10);
         assertThat(pending).isEmpty();
 
         Long failedCount = jdbcClient
-            .sql("SELECT COUNT(*) FROM outbox_events WHERE status = 'FAILED'")
-            .query(Long.class)
-            .single();
+                .sql("SELECT COUNT(*) FROM outbox_events WHERE status = 'FAILED'")
+                .query(Long.class)
+                .single();
         assertThat(failedCount).isEqualTo(1L);
     }
 }

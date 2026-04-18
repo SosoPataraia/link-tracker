@@ -46,19 +46,20 @@ class KafkaDlqTest {
     @Test
     void processingError_retriesAndSendsToDlt() {
         doThrow(new RuntimeException("Simulated processing error"))
-            .when(notificationHandler).handleUpdate(any());
+                .when(notificationHandler)
+                .handleUpdate(any());
 
         var event = LinkUpdateEvent.newBuilder()
-            .setId(1L)
-            .setUrl("https://github.com/user/repo")
-            .setDescription("Test")
-            .setTgChatIds(List.of(100L))
-            .build();
+                .setId(1L)
+                .setUrl("https://github.com/user/repo")
+                .setDescription("Test")
+                .setTgChatIds(List.of(100L))
+                .build();
 
         avroTestKafkaTemplate.send("link-updates", event);
 
         await().atMost(Duration.ofSeconds(60))
-            .untilAsserted(() -> verify(notificationHandler, times(3)).handleUpdate(any()));
+                .untilAsserted(() -> verify(notificationHandler, times(3)).handleUpdate(any()));
     }
 
     @Test
@@ -66,7 +67,7 @@ class KafkaDlqTest {
         testStringKafkaTemplate.send("link-updates", "this is not valid avro {{{");
 
         await().atMost(Duration.ofSeconds(15))
-            .during(Duration.ofSeconds(5))
-            .untilAsserted(() -> verify(notificationHandler, never()).handleUpdate(any()));
+                .during(Duration.ofSeconds(5))
+                .untilAsserted(() -> verify(notificationHandler, never()).handleUpdate(any()));
     }
 }

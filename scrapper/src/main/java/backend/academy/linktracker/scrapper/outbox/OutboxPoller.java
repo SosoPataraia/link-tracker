@@ -31,13 +31,15 @@ public class OutboxPoller {
                 LinkUpdate update = objectMapper.readValue(event.getPayload(), LinkUpdate.class);
 
                 LinkUpdateEvent avroEvent = LinkUpdateEvent.newBuilder()
-                    .setId(update.getId())
-                    .setUrl(update.getUrl())
-                    .setDescription(update.getDescription())
-                    .setTgChatIds(update.getTgChatIds())
-                    .build();
+                        .setId(update.getId())
+                        .setUrl(update.getUrl())
+                        .setDescription(update.getDescription())
+                        .setTgChatIds(update.getTgChatIds())
+                        .build();
 
-                avroKafkaTemplate.send(event.getTopic(), event.getKey(), avroEvent).get();
+                avroKafkaTemplate
+                        .send(event.getTopic(), event.getKey(), avroEvent)
+                        .get();
                 outboxRepository.markProcessed(event.getId());
                 log.info("Outbox event processed: id={} url={}", event.getId(), update.getUrl());
             } catch (Exception e) {

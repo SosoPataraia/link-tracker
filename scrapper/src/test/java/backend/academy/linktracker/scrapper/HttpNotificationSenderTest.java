@@ -14,9 +14,7 @@ import org.springframework.test.context.TestPropertySource;
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 @ActiveProfiles("test")
-@TestPropertySource(properties = {
-    "app.notification.transport=http"
-})
+@TestPropertySource(properties = {"app.notification.transport=http"})
 class HttpNotificationSenderTest {
 
     @Autowired

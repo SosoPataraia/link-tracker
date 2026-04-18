@@ -13,9 +13,9 @@ public class ClientConfiguration {
     @Bean
     public RestClient gitHubRestClient(GithubProperties properties) {
         RestClient.Builder builder = RestClient.builder()
-            .baseUrl(properties.getBaseUrl())
-            .defaultHeader("Accept", "application/vnd.github+json")
-            .defaultHeader("X-GitHub-Api-Version", "2022-11-28");
+                .baseUrl(properties.getBaseUrl())
+                .defaultHeader("Accept", "application/vnd.github+json")
+                .defaultHeader("X-GitHub-Api-Version", "2022-11-28");
 
         if (properties.getToken() != null && !properties.getToken().isBlank()) {
             builder.defaultHeader("Authorization", "Bearer " + properties.getToken());
@@ -26,9 +26,9 @@ public class ClientConfiguration {
     @Bean
     public RestClient stackOverflowRestClient(StackoverflowProperties properties) {
         return RestClient.builder()
-            .baseUrl(properties.getBaseUrl())
-            .defaultHeader("Accept", "application/json")
-            .build();
+                .baseUrl(properties.getBaseUrl())
+                .defaultHeader("Accept", "application/json")
+                .build();
     }
 
     @Bean
