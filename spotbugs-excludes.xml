@@ -68,4 +68,7 @@
     <Match>
         <Package name="~.*\.jmh_generated"/>
     </Match>
+    <Match>
+        <Class name="backend.academy.linktracker.avro.LinkUpdateEvent"/>
+    </Match>
 </FindBugsFilter>
