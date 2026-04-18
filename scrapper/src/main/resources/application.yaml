@@ -23,6 +23,7 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
       properties:
         spring.json.type.mapping: linkUpdate:backend.academy.linktracker.scrapper.dto.LinkUpdate
+    schema-registry-url: ${SCHEMA_REGISTRY_URL:http://localhost:8085}
 
 app:
   stackoverflow:

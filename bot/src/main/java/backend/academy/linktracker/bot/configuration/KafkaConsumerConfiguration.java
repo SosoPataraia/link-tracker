@@ -1,7 +1,9 @@
 package backend.academy.linktracker.bot.configuration;
 
-import backend.academy.linktracker.bot.dto.LinkUpdate;
 import backend.academy.linktracker.bot.properties.KafkaProperties;
+import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
+import io.confluent.kafka.serializers.KafkaAvroDeserializer;
+import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +12,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,7 +23,7 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
-import org.springframework.kafka.support.serializer.JacksonJsonDeserializer;
+import org.springframework.lang.Nullable;
 import org.springframework.util.backoff.FixedBackOff;
 
 @Slf4j
@@ -36,17 +39,28 @@ public class KafkaConsumerConfiguration {
     @Value("${spring.kafka.consumer.group-id:bot-group}")
     private String groupId;
 
-    @Bean
-    public ConsumerFactory<String, LinkUpdate> consumerFactory() {
-        var deserializer = new JacksonJsonDeserializer<>(LinkUpdate.class);
-        deserializer.addTrustedPackages("*");
+    @Value("${app.kafka.schema-registry-url:http://localhost:8085}")
+    private String schemaRegistryUrl;
 
+    @Bean
+    public ConsumerFactory<String, Object> consumerFactory(
+        @Autowired(required = false) @Nullable SchemaRegistryClient schemaRegistryClient) {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.put("schema.registry.url", schemaRegistryUrl);
+        props.put(KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG, true);
 
-        return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), deserializer);
+        if (schemaRegistryClient != null) {
+            var deserializer = new KafkaAvroDeserializer(schemaRegistryClient);
+            deserializer.configure(props, false);
+            return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), deserializer);
+        }
+
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, KafkaAvroDeserializer.class);
+        return new DefaultKafkaConsumerFactory<>(props);
     }
 
     @Bean
@@ -59,11 +73,11 @@ public class KafkaConsumerConfiguration {
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, LinkUpdate> kafkaListenerContainerFactory(
-        ConsumerFactory<String, LinkUpdate> consumerFactory,
+    public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory(
+        ConsumerFactory<String, Object> consumerFactory,
         KafkaTemplate<String, String> dltKafkaTemplate) {
 
-        var factory = new ConcurrentKafkaListenerContainerFactory<String, LinkUpdate>();
+        var factory = new ConcurrentKafkaListenerContainerFactory<String, Object>();
         factory.setConsumerFactory(consumerFactory);
 
         int retryAttempts = kafkaProperties.getConsumer().getRetryAttempts();

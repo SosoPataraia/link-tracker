@@ -27,3 +27,4 @@ app:
       link-updates: link-updates
     consumer:
       retry-attempts: 3
+    schema-registry-url: ${SCHEMA_REGISTRY_URL:http://localhost:8085}
