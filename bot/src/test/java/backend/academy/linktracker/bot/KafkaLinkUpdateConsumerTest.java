@@ -26,7 +26,7 @@ import org.wiremock.spring.EnableWireMock;
 class KafkaLinkUpdateConsumerTest {
 
     @Autowired
-    KafkaTemplate<String, Object> kafkaTemplate;
+    KafkaTemplate<String, String> dltKafkaTemplate;
 
     @MockitoBean
     UpdateNotificationHandler notificationHandler;
@@ -41,7 +41,7 @@ class KafkaLinkUpdateConsumerTest {
         var update = new LinkUpdate(1L, "https://github.com/user/repo", "New issue", List.of(100L, 200L));
         String json = objectMapper.writeValueAsString(update);
 
-        kafkaTemplate.send("link-updates", json);
+        dltKafkaTemplate.send("link-updates", json);
 
         await().atMost(Duration.ofSeconds(30))
             .untilAsserted(() -> verify(notificationHandler).handleUpdate(any(LinkUpdate.class)));
