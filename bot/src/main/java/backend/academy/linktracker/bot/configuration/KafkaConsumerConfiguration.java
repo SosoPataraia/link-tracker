@@ -23,6 +23,7 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
+import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.lang.Nullable;
 import org.springframework.util.backoff.FixedBackOff;
 
@@ -50,16 +51,18 @@ public class KafkaConsumerConfiguration {
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
+        props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, KafkaAvroDeserializer.class.getName());
         props.put("schema.registry.url", schemaRegistryUrl);
         props.put(KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG, true);
 
         if (schemaRegistryClient != null) {
-            var deserializer = new KafkaAvroDeserializer(schemaRegistryClient);
-            deserializer.configure(props, false);
-            return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), deserializer);
+            var avroDeserializer = new KafkaAvroDeserializer(schemaRegistryClient);
+            avroDeserializer.configure(props, false);
+            var errorHandlingDeserializer = new ErrorHandlingDeserializer<>(avroDeserializer);
+            return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), errorHandlingDeserializer);
         }
 
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, KafkaAvroDeserializer.class);
         return new DefaultKafkaConsumerFactory<>(props);
     }
 
