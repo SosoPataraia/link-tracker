@@ -2,7 +2,9 @@ package backend.academy.linktracker.bot;
 
 import com.redis.testcontainers.RedisContainer;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.testcontainers.kafka.KafkaContainer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.test.context.DynamicPropertyRegistrar;
+import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -23,10 +25,14 @@ class TestcontainersConfiguration {
         return new RedisContainer(DockerImageName.parse("redis:8.2-alpine"));
     }
 
-    // Uncomment to start KafkaContainer
-    // @Bean
-    // @ServiceConnection
+    @Bean
     KafkaContainer kafkaContainer() {
-        return new KafkaContainer(DockerImageName.parse("apache/kafka-native:4.1.1"));
+        return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.6.1"));
+    }
+
+    @Bean
+    DynamicPropertyRegistrar kafkaProperties(KafkaContainer kafkaContainer) {
+        return registry -> registry.add(
+            "spring.kafka.bootstrap-servers", kafkaContainer::getBootstrapServers);
     }
 }

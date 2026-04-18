@@ -4,3 +4,14 @@ app:
     token: test-token
     update-listener-sleep: 1s
     debug: true
+  kafka:
+    topic:
+      link-updates: link-updates
+
+spring:
+  kafka:
+    consumer:
+      group-id: bot-group-test
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
