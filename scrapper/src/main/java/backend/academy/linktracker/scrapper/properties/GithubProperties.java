@@ -14,4 +14,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class GithubProperties {
 
     private String token = "";
+    private String baseUrl = "https://api.github.com";
 }

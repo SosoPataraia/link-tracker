@@ -14,6 +14,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class StackoverflowProperties {
 
     private String key = "";
-
     private String accessToken = "";
+    private String baseUrl = "https://api.stackexchange.com/2.3";
 }
