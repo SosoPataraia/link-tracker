@@ -45,3 +45,5 @@ app:
       topic:
         link-updates: link-updates
         link-updates-dlt: link-updates.DLT
+  outbox:
+    poll-interval-ms: 1000

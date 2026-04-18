@@ -24,7 +24,9 @@ public class TestcontainersConfiguration {
 
     @Bean
     DynamicPropertyRegistrar kafkaProperties(KafkaContainer kafkaContainer) {
-        return registry -> registry.add(
-            "spring.kafka.bootstrap-servers", kafkaContainer::getBootstrapServers);
+        return registry -> {
+            registry.add("spring.kafka.bootstrap-servers", kafkaContainer::getBootstrapServers);
+            registry.add("app.kafka.schema-registry-url", () -> "mock://test");
+        };
     }
 }

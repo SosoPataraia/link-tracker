@@ -19,6 +19,9 @@ import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
+import backend.academy.linktracker.scrapper.outbox.OutboxRepository;
+import backend.academy.linktracker.scrapper.sender.OutboxNotificationSender;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Configuration
 public class NotificationSenderConfiguration {
@@ -85,5 +88,13 @@ public class NotificationSenderConfiguration {
     public NotificationSender kafkaNotificationSender(
         KafkaTemplate<String, LinkUpdateEvent> avroKafkaTemplate) {
         return new KafkaNotificationSender(avroKafkaTemplate, linkUpdatesTopic);
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "app.notification.transport", havingValue = "outbox")
+    public NotificationSender outboxNotificationSender(
+        OutboxRepository outboxRepository,
+        ObjectMapper objectMapper) {
+        return new OutboxNotificationSender(outboxRepository, objectMapper, linkUpdatesTopic);
     }
 }
