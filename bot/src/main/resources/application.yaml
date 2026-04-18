@@ -25,3 +25,5 @@ app:
   kafka:
     topic:
       link-updates: link-updates
+    consumer:
+      retry-attempts: 3
