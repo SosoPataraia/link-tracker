@@ -211,6 +211,16 @@
                         <goals>
                             <goal>generate</goal>
                         </goals>
+                        <configuration>
+                            <protocVersion>4.33.4</protocVersion>
+                            <jvmMavenPlugins>
+                                <jvmMavenPlugin>
+                                    <groupId>io.grpc</groupId>
+                                    <artifactId>protoc-gen-grpc-java</artifactId>
+                                    <version>1.77.1</version>
+                                </jvmMavenPlugin>
+                            </jvmMavenPlugins>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
