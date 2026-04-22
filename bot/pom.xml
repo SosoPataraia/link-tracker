@@ -218,13 +218,13 @@
                         </goals>
                         <configuration>
                             <protocVersion>4.33.4</protocVersion>
-                            <jvmMavenPlugins>
-                                <jvmMavenPlugin>
+                            <protocPlugins>
+                                <protocPlugin kind="jvm-maven">
                                     <groupId>io.grpc</groupId>
                                     <artifactId>protoc-gen-grpc-java</artifactId>
                                     <version>1.77.1</version>
-                                </jvmMavenPlugin>
-                            </jvmMavenPlugins>
+                                </protocPlugin>
+                            </protocPlugins>
                         </configuration>
                     </execution>
                 </executions>
