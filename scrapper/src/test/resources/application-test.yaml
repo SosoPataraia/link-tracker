@@ -1,0 +1,17 @@
+app:
+  stackoverflow:
+    key: test-key
+    access-token: test-token
+  github:
+    token: test-token
+  bot:
+    base-url: http://localhost:9999
+  scheduler:
+    interval: 999999
+
+spring:
+  grpc:
+    server:
+      port: 0
+  autoconfigure:
+    exclude: org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
