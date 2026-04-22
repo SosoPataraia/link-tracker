@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public class InMemoryLinkRepository {
+public class InMemoryLinkRepository implements LinkRepository {
 
     private final Map<Long, TrackedLink> linksById = new ConcurrentHashMap<>();
     private final Map<Long, List<Long>> linksByChatId = new ConcurrentHashMap<>();
