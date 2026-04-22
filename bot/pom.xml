@@ -61,6 +61,10 @@
             <artifactId>commons-text</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.github.pengrad</groupId>
+            <artifactId>java-telegram-bot-api</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
         </dependency>
@@ -72,22 +76,6 @@
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.github.pengrad</groupId>
-            <artifactId>java-telegram-bot-api</artifactId>
-        </dependency>
-
-        <!-- Database: -->
-        <!-- <dependency> -->
-        <!--     <groupId>org.springframework.boot</groupId> -->
-        <!--     &lt;!&ndash; or: spring-boot-starter-data-jpa &ndash;&gt; -->
-        <!--     <artifactId>spring-boot-starter-data-jdbc</artifactId> -->
-        <!-- </dependency> -->
-        <!-- <dependency> -->
-        <!--     <groupId>org.springframework.boot</groupId> -->
-        <!--     &lt;!&ndash; or: spring-boot-starter-flyway &ndash;&gt; -->
-        <!--     <artifactId>spring-boot-starter-liquibase</artifactId> -->
-        <!-- </dependency> -->
 
         <!-- gRPC: -->
         <dependency>
@@ -99,42 +87,9 @@
             <artifactId>grpc-services</artifactId>
         </dependency>
 
-        <!-- GraphQL: -->
-        <!-- <dependency> -->
-        <!--     <groupId>org.springframework.boot</groupId> -->
-        <!--     <artifactId>spring-boot-starter-graphql</artifactId> -->
-        <!-- </dependency> -->
-
-        <!-- Redis: -->
-        <!-- <dependency> -->
-        <!--     <groupId>org.springframework.boot</groupId> -->
-        <!--     <artifactId>spring-boot-starter-data-redis</artifactId> -->
-        <!-- </dependency> -->
-
-        <!-- Kafka: -->
-        <!-- <dependency>-->
-        <!--     <groupId>org.springframework.boot</groupId> -->
-        <!--     <artifactId>spring-boot-starter-kafka</artifactId> -->
-        <!-- </dependency> -->
-
-        <!-- Opentelemetry support: -->
-        <!-- <dependency> -->
-        <!--     <groupId>org.springframework.boot</groupId> -->
-        <!--     <artifactId>spring-boot-starter-opentelemetry</artifactId> -->
-        <!-- </dependency> -->
-        <!-- <dependency> -->
-        <!--     <groupId>io.opentelemetry.instrumentation</groupId> -->
-        <!--     <artifactId>opentelemetry-logback-appender-1.0</artifactId> -->
-        <!-- </dependency> -->
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
 
@@ -198,11 +153,6 @@
             <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <scope>provided</scope>
-        </dependency>
     </dependencies>
 
     <build>
@@ -216,20 +166,9 @@
                         <goals>
                             <goal>generate</goal>
                         </goals>
-                        <configuration>
-                            <protocVersion>4.33.4</protocVersion>
-                            <protocPlugins>
-                                <protocPlugin kind="jvm-maven">
-                                    <groupId>io.grpc</groupId>
-                                    <artifactId>protoc-gen-grpc-java</artifactId>
-                                    <version>1.77.1</version>
-                                </protocPlugin>
-                            </protocPlugins>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
-            <!-- To build OCI image: https://docs.spring.io/spring-boot/maven-plugin/build-image.html -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

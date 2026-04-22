@@ -73,16 +73,6 @@
             <artifactId>commons-codec</artifactId>
         </dependency>
 
-        <!-- Opentelemetry support: -->
-        <!-- <dependency> -->
-        <!--     <groupId>org.springframework.boot</groupId> -->
-        <!--     <artifactId>spring-boot-starter-opentelemetry</artifactId> -->
-        <!-- </dependency> -->
-        <!-- <dependency> -->
-        <!--     <groupId>io.opentelemetry.instrumentation</groupId> -->
-        <!--     <artifactId>opentelemetry-logback-appender-1.0</artifactId> -->
-        <!-- </dependency> -->
-
         <!-- gRPC: -->
         <dependency>
             <groupId>org.springframework.grpc</groupId>
@@ -93,45 +83,15 @@
             <artifactId>grpc-services</artifactId>
         </dependency>
 
-        <!-- GraphQL: -->
-        <!-- <dependency> -->
-        <!--     <groupId>org.springframework.boot</groupId> -->
-        <!--     <artifactId>spring-boot-starter-graphql</artifactId> -->
-        <!-- </dependency> -->
-
-        <!-- Redis: -->
-        <!-- <dependency> -->
-        <!--     <groupId>org.springframework.boot</groupId> -->
-        <!--     <artifactId>spring-boot-starter-data-redis</artifactId> -->
-        <!-- </dependency> -->
-
-        <!-- Kafka: -->
-        <!-- <dependency>-->
-        <!--     <groupId>org.springframework.boot</groupId> -->
-        <!--     <artifactId>spring-boot-starter-kafka</artifactId> -->
-        <!-- </dependency> -->
-
-        <!-- Opentelemetry support: -->
-        <!-- <dependency> -->
-        <!--     <groupId>org.springframework.boot</groupId> -->
-        <!--     <artifactId>spring-boot-starter-opentelemetry</artifactId> -->
-        <!-- </dependency> -->
-        <!-- <dependency> -->
-        <!--     <groupId>io.opentelemetry.instrumentation</groupId> -->
-        <!--     <artifactId>opentelemetry-logback-appender-1.0</artifactId> -->
-        <!-- </dependency> -->
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jdbc</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
@@ -211,20 +171,9 @@
                         <goals>
                             <goal>generate</goal>
                         </goals>
-                        <configuration>
-                            <protocVersion>4.33.4</protocVersion>
-                            <protocPlugins>
-                                <protocPlugin kind="jvm-maven">
-                                    <groupId>io.grpc</groupId>
-                                    <artifactId>protoc-gen-grpc-java</artifactId>
-                                    <version>1.77.1</version>
-                                </protocPlugin>
-                            </protocPlugins>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
-            <!-- To build OCI image: https://docs.spring.io/spring-boot/maven-plugin/build-image.html -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
