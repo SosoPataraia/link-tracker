@@ -1,9 +1,11 @@
 package backend.academy.linktracker.bot.service;
 
+import backend.academy.linktracker.bot.command.Command;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.BotCommand;
 import com.pengrad.telegrambot.request.SetMyCommands;
 import jakarta.annotation.PostConstruct;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -14,17 +16,16 @@ import org.springframework.stereotype.Service;
 public class BotCommandsRegistrar {
 
     private final TelegramBot telegramBot;
+    private final List<Command> commands;
 
     @PostConstruct
     public void registerCommands() {
         try {
-            var commands = new BotCommand[] {
-                new BotCommand("start", "Начать работу с ботом"),
-                new BotCommand("help", "Показать список доступных команд")
-            };
+            BotCommand[] botCommands = commands.stream()
+                    .map(c -> new BotCommand(c.command().replace("/", ""), c.description()))
+                    .toArray(BotCommand[]::new);
 
-            var request = new SetMyCommands(commands);
-            var response = telegramBot.execute(request);
+            var response = telegramBot.execute(new SetMyCommands(botCommands));
 
             if (response.isOk()) {
                 log.info("Bot commands registered successfully");

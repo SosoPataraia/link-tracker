@@ -1,7 +1,6 @@
 package backend.academy.linktracker.bot.handler;
 
 import backend.academy.linktracker.bot.command.Command;
-import backend.academy.linktracker.bot.command.UnknownCommand;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
 import java.util.List;
@@ -15,11 +14,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class CommandHandler {
 
-    private final Map<String, Command> commands;
-    private final UnknownCommand unknownCommand;
+    private static final String UNKNOWN_COMMAND_TEXT =
+            "Неизвестная команда. Воспользуйтесь /help, чтобы посмотреть список доступных команд.";
 
-    public CommandHandler(List<Command> commandList, UnknownCommand unknownCommand) {
-        this.unknownCommand = unknownCommand;
+    private final Map<String, Command> commands;
+
+    public CommandHandler(List<Command> commandList) {
         this.commands = commandList.stream().collect(Collectors.toMap(Command::command, Function.identity()));
     }
 
@@ -29,7 +29,11 @@ public class CommandHandler {
 
         log.info("Handling command chatId={} command={}", chatId, text);
 
-        Command command = commands.getOrDefault(text, unknownCommand);
-        return command.handle(update);
+        if (commands.containsKey(text)) {
+            return commands.get(text).handle(update);
+        }
+
+        log.warn("Unknown command chatId={} command={}", chatId, text);
+        return new SendMessage(chatId, UNKNOWN_COMMAND_TEXT);
     }
 }

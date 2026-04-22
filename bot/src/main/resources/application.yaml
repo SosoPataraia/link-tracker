@@ -4,11 +4,3 @@ app:
     url: https://api.telegram.org/
     update-listener-sleep: 1000
     debug: false
-
-logging:
-  level:
-    com.pengrad: DEBUG
-    okhttp3: DEBUG
-    okhttp3.internal.http2: OFF
-    okhttp3.internal.concurrent: OFF
-    okhttp3.internal.connection: OFF

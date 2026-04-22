@@ -13,6 +13,11 @@ public class StartCommand implements Command {
     }
 
     @Override
+    public String description() {
+        return "Начать работу с ботом";
+    }
+
+    @Override
     public SendMessage handle(Update update) {
         long chatId = update.message().chat().id();
         return new SendMessage(chatId, "Добро пожаловать! Используйте /help, чтобы посмотреть доступные команды.");

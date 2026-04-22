@@ -5,7 +5,6 @@ import static org.mockito.Mockito.when;
 
 import backend.academy.linktracker.bot.command.HelpCommand;
 import backend.academy.linktracker.bot.command.StartCommand;
-import backend.academy.linktracker.bot.command.UnknownCommand;
 import com.pengrad.telegrambot.model.Chat;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
@@ -36,9 +35,8 @@ class CommandHandlerTest {
     @BeforeEach
     void setUp() {
         var startCommand = new StartCommand();
-        var helpCommand = new HelpCommand();
-        var unknownCommand = new UnknownCommand();
-        commandHandler = new CommandHandler(List.of(startCommand, helpCommand, unknownCommand), unknownCommand);
+        var helpCommand = new HelpCommand(List.of(startCommand, new HelpCommand(List.of())));
+        commandHandler = new CommandHandler(List.of(startCommand, helpCommand));
         when(update.message()).thenReturn(message);
         when(message.chat()).thenReturn(chat);
         when(chat.id()).thenReturn(CHAT_ID);

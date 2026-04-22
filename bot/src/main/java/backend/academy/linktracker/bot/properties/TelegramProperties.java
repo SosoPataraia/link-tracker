@@ -31,4 +31,8 @@ public class TelegramProperties {
     private boolean debug;
 
     private boolean autoStartListener = true;
+
+    public boolean isCustomUrl() {
+        return url != null && !url.isBlank() && !url.equals("https://api.telegram.org/");
+    }
 }
