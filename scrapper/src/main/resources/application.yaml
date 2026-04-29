@@ -24,6 +24,14 @@ spring:
       properties:
         spring.json.type.mapping: linkUpdate:backend.academy.linktracker.scrapper.dto.LinkUpdate
     schema-registry-url: ${SCHEMA_REGISTRY_URL:http://localhost:8085}
+  data:
+    redis:
+      host: localhost
+      port: 6379
+    cache:
+      redis:
+        time-to-live: 60s
+      type: redis
 
 app:
   stackoverflow:
@@ -47,3 +55,7 @@ app:
         link-updates-dlt: link-updates.DLT
   outbox:
     poll-interval-ms: 1000
+
+cache:
+  links:
+    ttl: 60s
