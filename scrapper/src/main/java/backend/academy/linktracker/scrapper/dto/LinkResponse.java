@@ -1,5 +1,6 @@
 package backend.academy.linktracker.scrapper.dto;
 
+import java.io.Serializable;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -10,7 +11,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class LinkResponse {
+public class LinkResponse implements Serializable {
     private Long id;
     private String url;
     private List<String> tags;
