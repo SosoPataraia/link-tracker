@@ -14,6 +14,8 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 
 @Slf4j
 @Service
@@ -23,6 +25,7 @@ public class LinkApiService {
     private final LinkRepository linkRepository;
     private final ChatRepository chatRepository;
 
+    @Cacheable(value = "links", key = "#chatId")
     public Optional<ListLinksResponse> getLinks(long chatId) {
         if (!chatRepository.exists(chatId)) {
             return Optional.empty();
@@ -34,6 +37,7 @@ public class LinkApiService {
         return Optional.of(new ListLinksResponse(responses, responses.size()));
     }
 
+    @CacheEvict(value = "links", key = "#chatId")
     public Optional<LinkResponse> addLink(long chatId, AddLinkRequest request) {
         if (!chatRepository.exists(chatId)) {
             return Optional.empty();
@@ -53,6 +57,7 @@ public class LinkApiService {
         return Optional.of(new LinkResponse(saved.getId(), saved.getUrl(), saved.getTags()));
     }
 
+    @CacheEvict(value = "links", key = "#chatId")
     public Optional<LinkResponse> removeLink(long chatId, RemoveLinkRequest request) {
         if (!chatRepository.exists(chatId)) {
             return Optional.empty();
