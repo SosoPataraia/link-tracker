@@ -165,10 +165,59 @@ services:
           --config retention.ms=2592000000
         echo 'Topic link-updates.DLT created.'
 
+  valkey-node-1:
+    image: bitnami/valkey-cluster:8.0
+    container_name: valkey-node-1
+    environment:
+      - VALKEY_PORT_NUMBER=7001
+      - VALKEY_CLUSTER_ENABLED=yes
+      - ALLOW_EMPTY_PASSWORD=yes
+      - VALKEY_CLUSTER_NODE_TIMEOUT=5000
+      - VALKEY_NODES=valkey-node-1 valkey-node-2 valkey-node-3
+      - VALKEY_CLUSTER_CREATOR=yes
+      - VALKEY_CLUSTER_REPLICAS=0
+    ports:
+      - "6379:7001"
+    volumes:
+      - valkey-node-1-data:/bitnami/valkey/data
+    networks:
+      - backend
+
+  valkey-node-2:
+    image: bitnami/valkey-cluster:8.0
+    container_name: valkey-node-2
+    environment:
+      - VALKEY_PORT_NUMBER=7002
+      - ALLOW_EMPTY_PASSWORD=yes
+      - VALKEY_CLUSTER_ENABLED=yes
+      - VALKEY_CLUSTER_NODE_TIMEOUT=5000
+      - VALKEY_NODES=valkey-node-1 valkey-node-2 valkey-node-3
+    volumes:
+      - valkey-node-2-data:/bitnami/valkey/data
+    networks:
+      - backend
+
+  valkey-node-3:
+    image: bitnami/valkey-cluster:8.0
+    container_name: valkey-node-3
+    environment:
+      - VALKEY_PORT_NUMBER=7003
+      - ALLOW_EMPTY_PASSWORD=yes
+      - VALKEY_CLUSTER_ENABLED=yes
+      - VALKEY_CLUSTER_NODE_TIMEOUT=5000
+      - VALKEY_NODES=valkey-node-1 valkey-node-2 valkey-node-3
+    volumes:
+      - valkey-node-3-data:/bitnami/valkey/data
+    networks:
+      - backend
+
 volumes:
   kafka-1-data:
   kafka-2-data:
   kafka-3-data:
+  valkey-node-1-data:
+  valkey-node-2-data:
+  valkey-node-3-data:
 
 networks:
   backend:
