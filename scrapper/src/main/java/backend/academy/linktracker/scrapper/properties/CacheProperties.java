@@ -12,4 +12,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @NoArgsConstructor
 public class CacheProperties {
     private Duration ttl = Duration.ofSeconds(60);
+    private boolean clientSideEnabled = false;
 }

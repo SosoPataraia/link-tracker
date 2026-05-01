@@ -1,5 +1,6 @@
 package backend.academy.linktracker.scrapper.service;
 
+import backend.academy.linktracker.scrapper.cache.LocalLinksCache;
 import backend.academy.linktracker.scrapper.dto.AddLinkRequest;
 import backend.academy.linktracker.scrapper.dto.LinkResponse;
 import backend.academy.linktracker.scrapper.dto.ListLinksResponse;
@@ -13,9 +14,10 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
@@ -25,8 +27,20 @@ public class LinkApiService {
     private final LinkRepository linkRepository;
     private final ChatRepository chatRepository;
 
+    @Autowired(required = false)
+    private LocalLinksCache localLinksCache;
+
     @Cacheable(value = "links", key = "#chatId")
     public Optional<ListLinksResponse> getLinks(long chatId) {
+        // L1 check
+        if (localLinksCache != null) {
+            ListLinksResponse cached = localLinksCache.get(chatId);
+            if (cached != null) {
+                log.debug("L1 cache hit for chatId={}", chatId);
+                return Optional.of(cached);
+            }
+        }
+
         if (!chatRepository.exists(chatId)) {
             return Optional.empty();
         }
@@ -34,11 +48,19 @@ public class LinkApiService {
         List<LinkResponse> responses = links.stream()
             .map(l -> new LinkResponse(l.getId(), l.getUrl(), l.getTags()))
             .toList();
-        return Optional.of(new ListLinksResponse(responses, responses.size()));
+        var result = new ListLinksResponse(responses, responses.size());
+
+        // populate L1
+        if (localLinksCache != null) {
+            localLinksCache.put(chatId, result);
+        }
+        return Optional.of(result);
     }
 
     @CacheEvict(value = "links", key = "#chatId")
     public Optional<LinkResponse> addLink(long chatId, AddLinkRequest request) {
+        if (localLinksCache != null) localLinksCache.evict(chatId);
+
         if (!chatRepository.exists(chatId)) {
             return Optional.empty();
         }
@@ -59,6 +81,8 @@ public class LinkApiService {
 
     @CacheEvict(value = "links", key = "#chatId")
     public Optional<LinkResponse> removeLink(long chatId, RemoveLinkRequest request) {
+        if (localLinksCache != null) localLinksCache.evict(chatId);
+
         if (!chatRepository.exists(chatId)) {
             return Optional.empty();
         }

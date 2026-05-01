@@ -53,3 +53,4 @@ app:
     poll-interval-ms: 1000
   cache:
     ttl: 60s
+    client-side-enabled: false
