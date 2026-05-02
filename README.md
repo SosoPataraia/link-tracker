@@ -25,6 +25,7 @@ This starts:
 - PostgreSQL (port 5432)
 - Kafka cluster — 3 brokers in KRaft mode (ports 29092, 29093, 29094)
 - Kafka UI (port 8090) — browse topics and messages at http://localhost:8090
+- Valkey — 1 primary + 2 replicas (primary on port 6379)
 
 Wait ~10 seconds for Kafka to be ready.
 
@@ -90,6 +91,42 @@ This test verifies the full message flow:
 2. Sends a `LinkUpdate` message to the `link-updates` Kafka topic
 3. A raw Kafka consumer verifies the message arrived with correct content
 
+## Caching (Valkey)
+
+The scrapper caches `GET /links` responses in Valkey (Redis-compatible) to reduce database load.
+
+### How it works
+
+- `GET /links` responses are cached in Valkey keyed by `chatId` with a configurable TTL (default 60s)
+- `POST /links` and `DELETE /links` evict the cache entry for the affected chat
+- Optionally, a JVM-level L1 cache can be enabled via Lettuce CLIENT TRACKING for zero-latency reads
+
+### Cache configuration
+
+| Property | Default | Description |
+|---|---|---|
+| `app.cache.ttl` | `60s` | Cache entry TTL in Valkey |
+| `app.cache.client-side-enabled` | `false` | Enable JVM-level L1 cache via Lettuce CLIENT TRACKING |
+
+### Infrastructure
+
+The docker-compose includes a 3-node Valkey setup:
+- `valkey` — primary node (port 6379)
+- `valkey-replica-1` — replica
+- `valkey-replica-2` — replica
+
+### Load test results
+
+Tests run with 32 threads, 60s ramp-up, 5 minute duration, 100k links (1000 chats × 100 links):
+
+| Scenario | RPS | Avg ms | Min ms | Max ms | Errors |
+|---|---|---|---|---|---|
+| No cache | 864.3 | 33 | 2 | 1273 | 0% |
+| Valkey cache | 743.7 | 38 | 2 | 476 | 0% |
+| Client-side cache | 922.1 | 31 | 2 | 852 | 0% |
+
+Client-side caching achieves the highest throughput by serving from JVM memory. Valkey cache shows better tail latency (Max 476ms vs 1273ms) compared to no-cache.
+
 ## Notification Transport
 
 By default, scrapper sends notifications to bot via **Kafka**. To switch to HTTP:
@@ -129,6 +166,8 @@ Supported links: `github.com/{owner}/{repo}` and `stackoverflow.com/questions/{i
 | `app.scheduler.interval`            | `60000` | Polling interval ms        |
 | `app.scheduler.batch-size`          | `100`   | Links per tick (50–500)    |
 | `app.scheduler.thread-count`        | `4`     | Parallel threads per batch |
+| `app.cache.ttl`                     | `60s`   | Valkey cache TTL           |
+| `app.cache.client-side-enabled`     | `false` | Enable L1 JVM cache        |
 
 ## Error Handling (DLQ)
 
@@ -178,4 +217,3 @@ The `scrapper` database has tables but no Liquibase changelog. Clean solution:
 docker compose down -v
 docker compose up -d
 ```
-
