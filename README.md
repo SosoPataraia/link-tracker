@@ -103,9 +103,9 @@ The scrapper caches `GET /links` responses in Valkey (Redis-compatible) to reduc
 
 ### Cache configuration
 
-| Property | Default | Description |
-|---|---|---|
-| `app.cache.ttl` | `60s` | Cache entry TTL in Valkey |
+|            Property             | Default |                      Description                      |
+|---------------------------------|---------|-------------------------------------------------------|
+| `app.cache.ttl`                 | `60s`   | Cache entry TTL in Valkey                             |
 | `app.cache.client-side-enabled` | `false` | Enable JVM-level L1 cache via Lettuce CLIENT TRACKING |
 
 ### Infrastructure
@@ -119,11 +119,11 @@ The docker-compose includes a 3-node Valkey setup:
 
 Tests run with 32 threads, 60s ramp-up, 5 minute duration, 100k links (1000 chats × 100 links):
 
-| Scenario | RPS | Avg ms | Min ms | Max ms | Errors |
-|---|---|---|---|---|---|
-| No cache | 864.3 | 33 | 2 | 1273 | 0% |
-| Valkey cache | 743.7 | 38 | 2 | 476 | 0% |
-| Client-side cache | 922.1 | 31 | 2 | 852 | 0% |
+|     Scenario      |  RPS  | Avg ms | Min ms | Max ms | Errors |
+|-------------------|-------|--------|--------|--------|--------|
+| No cache          | 864.3 | 33     | 2      | 1273   | 0%     |
+| Valkey cache      | 743.7 | 38     | 2      | 476    | 0%     |
+| Client-side cache | 922.1 | 31     | 2      | 852    | 0%     |
 
 Client-side caching achieves the highest throughput by serving from JVM memory. Valkey cache shows better tail latency (Max 476ms vs 1273ms) compared to no-cache.
 
@@ -217,3 +217,4 @@ The `scrapper` database has tables but no Liquibase changelog. Clean solution:
 docker compose down -v
 docker compose up -d
 ```
+

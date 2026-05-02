@@ -22,20 +22,17 @@ public class CacheConfiguration {
 
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-        Duration ttl = cacheProperties.getTtl() != null
-            ? cacheProperties.getTtl()
-            : Duration.ofSeconds(60);
+        Duration ttl = cacheProperties.getTtl() != null ? cacheProperties.getTtl() : Duration.ofSeconds(60);
 
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-            .entryTtl(ttl)
-            .serializeKeysWith(
-                RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-            .serializeValuesWith(
-                RedisSerializationContext.SerializationPair.fromSerializer(
-                    new GenericJackson2JsonRedisSerializer()));
+                .entryTtl(ttl)
+                .serializeKeysWith(
+                        RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(
+                        new GenericJackson2JsonRedisSerializer()));
 
         return RedisCacheManager.builder(connectionFactory)
-            .cacheDefaults(config)
-            .build();
+                .cacheDefaults(config)
+                .build();
     }
 }

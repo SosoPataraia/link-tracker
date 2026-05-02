@@ -36,10 +36,9 @@ public class ClientSideCacheConfiguration {
             pubSubConnection = redisClient.connectPubSub();
 
             ClientSideCaching.enable(
-                CacheAccessor.forMap(new java.util.concurrent.ConcurrentHashMap<>()),
-                connection,
-                TrackingArgs.Builder.enabled().bcast()
-            );
+                    CacheAccessor.forMap(new java.util.concurrent.ConcurrentHashMap<>()),
+                    connection,
+                    TrackingArgs.Builder.enabled().bcast());
 
             pubSubConnection.addListener(new io.lettuce.core.pubsub.RedisPubSubAdapter<>() {
                 @Override

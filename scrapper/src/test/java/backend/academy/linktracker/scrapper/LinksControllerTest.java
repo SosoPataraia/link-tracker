@@ -34,8 +34,8 @@ class LinksControllerTest {
         var chatController = new TgChatController(chatRepository, linkRepository);
 
         mockMvc = MockMvcBuilders.standaloneSetup(linksController, chatController)
-            .setMessageConverters(new MappingJackson2HttpMessageConverter())
-            .build();
+                .setMessageConverters(new MappingJackson2HttpMessageConverter())
+                .build();
     }
 
     // Scenario 3.1

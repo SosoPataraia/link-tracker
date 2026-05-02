@@ -46,8 +46,8 @@ public class LinkApiService {
         }
         List<TrackedLink> links = linkRepository.findAllByChat(chatId);
         List<LinkResponse> responses = links.stream()
-            .map(l -> new LinkResponse(l.getId(), l.getUrl(), l.getTags()))
-            .toList();
+                .map(l -> new LinkResponse(l.getId(), l.getUrl(), l.getTags()))
+                .toList();
         var result = new ListLinksResponse(responses, responses.size());
 
         // populate L1
@@ -68,12 +68,12 @@ public class LinkApiService {
             return Optional.empty();
         }
         var link = new TrackedLink(
-            null,
-            chatId,
-            request.getLink(),
-            new ArrayList<>(request.getTags() != null ? request.getTags() : List.of()),
-            Instant.now(),
-            Instant.now());
+                null,
+                chatId,
+                request.getLink(),
+                new ArrayList<>(request.getTags() != null ? request.getTags() : List.of()),
+                Instant.now(),
+                Instant.now());
         TrackedLink saved = linkRepository.save(link);
         log.info("Added link url={} for chatId={}", request.getLink(), chatId);
         return Optional.of(new LinkResponse(saved.getId(), saved.getUrl(), saved.getTags()));

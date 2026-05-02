@@ -29,29 +29,32 @@ public class LinksController {
 
     @GetMapping
     public ResponseEntity<ListLinksResponse> getLinks(@RequestHeader("Tg-Chat-Id") long chatId) {
-        return linkApiService.getLinks(chatId)
-            .map(ResponseEntity::ok)
-            .orElse(ResponseEntity.badRequest().build());
+        return linkApiService
+                .getLinks(chatId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.badRequest().build());
     }
 
     @PostMapping
     public ResponseEntity<LinkResponse> addLink(
-        @RequestHeader("Tg-Chat-Id") long chatId, @Valid @RequestBody AddLinkRequest request) {
+            @RequestHeader("Tg-Chat-Id") long chatId, @Valid @RequestBody AddLinkRequest request) {
 
         if (linkRepository.findByChatAndUrl(chatId, request.getLink()).isPresent()) {
             return ResponseEntity.status(409).build();
         }
-        return linkApiService.addLink(chatId, request)
-            .map(ResponseEntity::ok)
-            .orElse(ResponseEntity.badRequest().build());
+        return linkApiService
+                .addLink(chatId, request)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.badRequest().build());
     }
 
     @DeleteMapping
     public ResponseEntity<LinkResponse> removeLink(
-        @RequestHeader("Tg-Chat-Id") long chatId, @Valid @RequestBody RemoveLinkRequest request) {
+            @RequestHeader("Tg-Chat-Id") long chatId, @Valid @RequestBody RemoveLinkRequest request) {
 
-        return linkApiService.removeLink(chatId, request)
-            .map(ResponseEntity::ok)
-            .orElse(ResponseEntity.status(404).build());
+        return linkApiService
+                .removeLink(chatId, request)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.status(404).build());
     }
 }

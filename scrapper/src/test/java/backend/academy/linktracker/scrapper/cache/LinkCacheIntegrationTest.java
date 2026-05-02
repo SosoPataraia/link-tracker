@@ -1,5 +1,7 @@
 package backend.academy.linktracker.scrapper.cache;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import backend.academy.linktracker.scrapper.TestcontainersConfiguration;
 import backend.academy.linktracker.scrapper.dto.AddLinkRequest;
 import backend.academy.linktracker.scrapper.dto.RemoveLinkRequest;
@@ -19,8 +21,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @Testcontainers
@@ -72,16 +72,15 @@ class LinkCacheIntegrationTest {
     void addLink_cacheEvictedAndReflectsNewData() {
         assertThat(linkApiService.getLinks(chatId).get().getSize()).isEqualTo(0);
 
-        linkApiService.addLink(chatId, new AddLinkRequest(
-            "https://stackoverflow.com/questions/123", List.of(), List.of()));
+        linkApiService.addLink(
+                chatId, new AddLinkRequest("https://stackoverflow.com/questions/123", List.of(), List.of()));
 
         assertThat(linkApiService.getLinks(chatId).get().getSize()).isEqualTo(1);
     }
 
     @Test
     void removeLink_cacheEvictedAndReflectsRemoval() {
-        linkApiService.addLink(chatId, new AddLinkRequest(
-            "https://github.com/test/repo", List.of(), List.of()));
+        linkApiService.addLink(chatId, new AddLinkRequest("https://github.com/test/repo", List.of(), List.of()));
 
         assertThat(linkApiService.getLinks(chatId).get().getSize()).isEqualTo(1);
 
