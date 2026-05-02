@@ -48,7 +48,7 @@ class LinkCacheIntegrationTest {
     @Autowired
     CacheManager cacheManager;
 
-    private static final AtomicLong chatIdSeq = new AtomicLong(2000);
+    private static final AtomicLong chatIdSeq = new AtomicLong(99000000);
     private long chatId;
 
     @BeforeEach
