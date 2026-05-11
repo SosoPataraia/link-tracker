@@ -3,10 +3,10 @@ package backend.academy.linktracker.scrapper.configuration;
 import backend.academy.linktracker.avro.LinkUpdateEvent;
 import backend.academy.linktracker.scrapper.client.BotClient;
 import backend.academy.linktracker.scrapper.outbox.OutboxRepository;
-import backend.academy.linktracker.scrapper.sender.HttpNotificationSender;
 import backend.academy.linktracker.scrapper.sender.KafkaNotificationSender;
 import backend.academy.linktracker.scrapper.sender.NotificationSender;
 import backend.academy.linktracker.scrapper.sender.OutboxNotificationSender;
+import backend.academy.linktracker.scrapper.sender.ResilientHttpNotificationSender;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import java.util.HashMap;
@@ -42,25 +42,24 @@ public class NotificationSenderConfiguration {
     @ConditionalOnProperty(name = "app.notification.transport", havingValue = "kafka", matchIfMissing = true)
     public NewTopic linkUpdatesTopic() {
         return TopicBuilder.name(linkUpdatesTopic)
-                .partitions(3)
-                .replicas(3)
-                .config("retention.ms", "604800000")
-                .config("min.insync.replicas", "2")
-                .build();
+            .partitions(3)
+            .replicas(3)
+            .config("retention.ms", "604800000")
+            .config("min.insync.replicas", "2")
+            .build();
     }
 
     @Bean
     @ConditionalOnProperty(name = "app.notification.transport", havingValue = "kafka", matchIfMissing = true)
     public NewTopic linkUpdatesDltTopic() {
         return TopicBuilder.name(linkUpdatesDltTopic)
-                .partitions(3)
-                .replicas(3)
-                .config("retention.ms", "2592000000")
-                .build();
+            .partitions(3)
+            .replicas(3)
+            .config("retention.ms", "2592000000")
+            .build();
     }
 
     @Bean
-    @ConditionalOnProperty(name = "app.notification.transport", havingValue = "kafka", matchIfMissing = true)
     public ProducerFactory<String, LinkUpdateEvent> avroProducerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
@@ -71,22 +70,28 @@ public class NotificationSenderConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(name = "app.notification.transport", havingValue = "kafka", matchIfMissing = true)
     public KafkaTemplate<String, LinkUpdateEvent> avroKafkaTemplate(
-            ProducerFactory<String, LinkUpdateEvent> avroProducerFactory) {
+        ProducerFactory<String, LinkUpdateEvent> avroProducerFactory) {
         return new KafkaTemplate<>(avroProducerFactory);
     }
 
     @Bean
+    public KafkaNotificationSender kafkaNotificationSender(
+        KafkaTemplate<String, LinkUpdateEvent> avroKafkaTemplate) {
+        return new KafkaNotificationSender(avroKafkaTemplate, linkUpdatesTopic);
+    }
+
+    @Bean
     @ConditionalOnProperty(name = "app.notification.transport", havingValue = "http")
-    public NotificationSender httpNotificationSender(BotClient botClient) {
-        return new HttpNotificationSender(botClient);
+    public NotificationSender httpNotificationSender(
+        BotClient botClient, KafkaNotificationSender kafkaNotificationSender) {
+        return new ResilientHttpNotificationSender(botClient, kafkaNotificationSender);
     }
 
     @Bean
     @ConditionalOnProperty(name = "app.notification.transport", havingValue = "kafka", matchIfMissing = true)
-    public NotificationSender kafkaNotificationSender(KafkaTemplate<String, LinkUpdateEvent> avroKafkaTemplate) {
-        return new KafkaNotificationSender(avroKafkaTemplate, linkUpdatesTopic);
+    public NotificationSender kafkaPrimaryNotificationSender(KafkaNotificationSender kafkaNotificationSender) {
+        return kafkaNotificationSender;
     }
 
     @Bean
