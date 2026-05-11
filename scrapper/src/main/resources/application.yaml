@@ -61,6 +61,10 @@ app:
     retryable-status-codes: 500,502,503,504
     retry-wait-duration: 500ms
     retry-max-attempts: 3
+  rate-limit:
+    capacity: 50
+    refill-tokens: 50
+    refill-period: 1m
 
 resilience4j:
   circuitbreaker:
