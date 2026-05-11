@@ -54,3 +54,6 @@ app:
   cache:
     ttl: 60s
     client-side-enabled: false
+  http-client:
+    connect-timeout: 3s
+    read-timeout: 5s
