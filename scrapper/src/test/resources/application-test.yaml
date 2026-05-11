@@ -7,7 +7,6 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-
 app:
   database:
     access-type: SQL
@@ -17,3 +16,26 @@ app:
     topic:
       link-updates: link-updates
       link-updates-dlt: link-updates.DLT
+  github:
+    base-url: ${wiremock.server.baseUrl:http://localhost:8080}
+  stackoverflow:
+    base-url: ${wiremock.server.baseUrl:http://localhost:8080}
+  bot:
+    base-url: ${wiremock.server.baseUrl:http://localhost:8080}
+  http-client:
+    connect-timeout: 3s
+    read-timeout: 5s
+resilience4j:
+  circuitbreaker:
+    instances:
+      githubClient:
+        sliding-window-size: 5
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 100
+        wait-duration-in-open-state: 1s
+        permitted-number-of-calls-in-half-open-state: 5
+  retry:
+    instances:
+      githubClient:
+        max-attempts: 3
+        wait-duration: 100ms

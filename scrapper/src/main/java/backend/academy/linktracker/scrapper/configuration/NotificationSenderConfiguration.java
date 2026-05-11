@@ -76,22 +76,19 @@ public class NotificationSenderConfiguration {
     }
 
     @Bean
-    public KafkaNotificationSender kafkaNotificationSender(
-        KafkaTemplate<String, LinkUpdateEvent> avroKafkaTemplate) {
-        return new KafkaNotificationSender(avroKafkaTemplate, linkUpdatesTopic);
-    }
-
-    @Bean
     @ConditionalOnProperty(name = "app.notification.transport", havingValue = "http")
     public NotificationSender httpNotificationSender(
-        BotClient botClient, KafkaNotificationSender kafkaNotificationSender) {
-        return new ResilientHttpNotificationSender(botClient, kafkaNotificationSender);
+        BotClient botClient,
+        KafkaTemplate<String, LinkUpdateEvent> avroKafkaTemplate) {
+        var kafkaFallback = new KafkaNotificationSender(avroKafkaTemplate, linkUpdatesTopic);
+        return new ResilientHttpNotificationSender(botClient, kafkaFallback);
     }
 
     @Bean
     @ConditionalOnProperty(name = "app.notification.transport", havingValue = "kafka", matchIfMissing = true)
-    public NotificationSender kafkaPrimaryNotificationSender(KafkaNotificationSender kafkaNotificationSender) {
-        return kafkaNotificationSender;
+    public NotificationSender kafkaNotificationSender(
+        KafkaTemplate<String, LinkUpdateEvent> avroKafkaTemplate) {
+        return new KafkaNotificationSender(avroKafkaTemplate, linkUpdatesTopic);
     }
 
     @Bean

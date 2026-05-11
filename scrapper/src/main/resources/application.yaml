@@ -105,6 +105,8 @@ resilience4j:
           - org.springframework.web.client.HttpServerErrorException
           - java.io.IOException
           - org.springframework.web.client.ResourceAccessException
+        ignore-exceptions:
+          - org.springframework.web.client.HttpClientErrorException
       stackOverflowClient:
         max-attempts: ${app.resilience.retry-max-attempts}
         wait-duration: ${app.resilience.retry-wait-duration}
@@ -112,3 +114,5 @@ resilience4j:
           - org.springframework.web.client.HttpServerErrorException
           - java.io.IOException
           - org.springframework.web.client.ResourceAccessException
+        ignore-exceptions:
+          - org.springframework.web.client.HttpClientErrorException

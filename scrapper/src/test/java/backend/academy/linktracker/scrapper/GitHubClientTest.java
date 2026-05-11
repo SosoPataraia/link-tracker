@@ -5,6 +5,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import backend.academy.linktracker.scrapper.client.GitHubClientImpl;
 import java.time.Instant;
@@ -15,6 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 import org.wiremock.spring.EnableWireMock;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
@@ -25,12 +27,12 @@ class GitHubClientTest {
 
     @Test
     void getLastUpdated_parsesDateCorrectly(
-            @org.wiremock.spring.InjectWireMock com.github.tomakehurst.wiremock.WireMockServer wireMock) {
+        @org.wiremock.spring.InjectWireMock com.github.tomakehurst.wiremock.WireMockServer wireMock) {
         stubFor(get(urlPathEqualTo("/repos/user/repo"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("""
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .withBody("""
                                 {
                                   "full_name": "user/repo",
                                   "pushed_at": "2024-01-15T10:30:00Z",
@@ -47,27 +49,27 @@ class GitHubClientTest {
     }
 
     @Test
-    void getLastUpdated_handlesErrorGracefully(
-            @org.wiremock.spring.InjectWireMock com.github.tomakehurst.wiremock.WireMockServer wireMock) {
+    void getLastUpdated_throwsOnServerError(
+        @org.wiremock.spring.InjectWireMock com.github.tomakehurst.wiremock.WireMockServer wireMock) {
         stubFor(get(urlPathEqualTo("/repos/user/repo")).willReturn(aResponse().withStatus(500)));
 
         var restClient = RestClient.builder().baseUrl(wireMock.baseUrl()).build();
         var client = new GitHubClientImpl(restClient);
 
-        Instant result = client.getLastUpdated("user", "repo");
-        assertThat(result).isNull();
+        assertThatThrownBy(() -> client.getLastUpdated("user", "repo"))
+            .isInstanceOf(RestClientException.class);
     }
 
     @Test
-    void getLastUpdated_handles404Gracefully(
-            @org.wiremock.spring.InjectWireMock com.github.tomakehurst.wiremock.WireMockServer wireMock) {
+    void getLastUpdated_throwsOn404(
+        @org.wiremock.spring.InjectWireMock com.github.tomakehurst.wiremock.WireMockServer wireMock) {
         stubFor(get(urlPathEqualTo("/repos/user/repo"))
-                .willReturn(aResponse().withStatus(404).withBody("{\"message\": \"Not Found\"}")));
+            .willReturn(aResponse().withStatus(404).withBody("{\"message\": \"Not Found\"}")));
 
         var restClient = RestClient.builder().baseUrl(wireMock.baseUrl()).build();
         var client = new GitHubClientImpl(restClient);
 
-        Instant result = client.getLastUpdated("user", "repo");
-        assertThat(result).isNull();
+        assertThatThrownBy(() -> client.getLastUpdated("user", "repo"))
+            .isInstanceOf(RestClientException.class);
     }
 }
