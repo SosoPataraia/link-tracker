@@ -19,17 +19,17 @@ public class ResilientHttpNotificationSender implements NotificationSender {
     @CircuitBreaker(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "sendViaKafka")
     public void send(LinkUpdate update) {
         log.atInfo()
-            .addKeyValue("url", update.getUrl())
-            .addKeyValue("transport", "http")
-            .log("notification.send");
+                .addKeyValue("url", update.getUrl())
+                .addKeyValue("transport", "http")
+                .log("notification.send");
         botClient.sendUpdate(update);
     }
 
     public void sendViaKafka(LinkUpdate update, Throwable cause) {
         log.atWarn()
-            .addKeyValue("url", update.getUrl())
-            .addKeyValue("reason", cause.getMessage())
-            .log("notification.http.failed.fallback.kafka");
+                .addKeyValue("url", update.getUrl())
+                .addKeyValue("reason", cause.getMessage())
+                .log("notification.http.failed.fallback.kafka");
         kafkaFallback.send(update);
     }
 }

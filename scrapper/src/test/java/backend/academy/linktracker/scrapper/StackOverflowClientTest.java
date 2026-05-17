@@ -52,9 +52,9 @@ class StackOverflowClientTest {
     void getLastActivity_throwsOnServerError() {
         stubFor(get(urlPathEqualTo("/questions/999")).willReturn(aResponse().withStatus(503)));
         var client = new StackOverflowClientImpl(
-            RestClient.builder().baseUrl(wireMock.baseUrl()).build());
+                RestClient.builder().baseUrl(wireMock.baseUrl()).build());
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> client.getLastActivity(999L))
-            .isInstanceOf(org.springframework.web.client.RestClientException.class);
+                .isInstanceOf(org.springframework.web.client.RestClientException.class);
     }
 
     @Test

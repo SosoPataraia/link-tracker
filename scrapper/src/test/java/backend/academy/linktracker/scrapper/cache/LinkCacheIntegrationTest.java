@@ -66,29 +66,23 @@ class LinkCacheIntegrationTest {
 
         var second = linkApiService.getLinks(chatId);
         assertThat(second).isPresent();
-        assertThat(second.get().getSize()).isEqualTo(first.get().getSize());
+        assertThat(second.orElseThrow().getSize()).isEqualTo(first.orElseThrow().getSize());
     }
 
     @Test
     void addLink_cacheEvictedAndReflectsNewData() {
-        assertThat(linkApiService.getLinks(chatId).get().getSize()).isEqualTo(0);
-
+        assertThat(linkApiService.getLinks(chatId).orElseThrow().getSize()).isEqualTo(0);
         linkApiService.addLink(
                 chatId, new AddLinkRequest("https://stackoverflow.com/questions/123", List.of(), List.of()));
-
-        assertThat(linkApiService.getLinks(chatId).get().getSize()).isEqualTo(1);
+        assertThat(linkApiService.getLinks(chatId).orElseThrow().getSize()).isEqualTo(1);
     }
 
     @Test
     void removeLink_cacheEvictedAndReflectsRemoval() {
         linkApiService.addLink(chatId, new AddLinkRequest("https://github.com/test/repo", List.of(), List.of()));
-
-        assertThat(linkApiService.getLinks(chatId).get().getSize()).isEqualTo(1);
-
-        assertThat(linkApiService.getLinks(chatId).get().getSize()).isEqualTo(1);
-
+        assertThat(linkApiService.getLinks(chatId).orElseThrow().getSize()).isEqualTo(1);
+        assertThat(linkApiService.getLinks(chatId).orElseThrow().getSize()).isEqualTo(1);
         linkApiService.removeLink(chatId, new RemoveLinkRequest("https://github.com/test/repo"));
-
-        assertThat(linkApiService.getLinks(chatId).get().getSize()).isEqualTo(0);
+        assertThat(linkApiService.getLinks(chatId).orElseThrow().getSize()).isEqualTo(0);
     }
 }

@@ -42,21 +42,21 @@ public class NotificationSenderConfiguration {
     @ConditionalOnProperty(name = "app.notification.transport", havingValue = "kafka", matchIfMissing = true)
     public NewTopic linkUpdatesTopic() {
         return TopicBuilder.name(linkUpdatesTopic)
-            .partitions(3)
-            .replicas(3)
-            .config("retention.ms", "604800000")
-            .config("min.insync.replicas", "2")
-            .build();
+                .partitions(3)
+                .replicas(3)
+                .config("retention.ms", "604800000")
+                .config("min.insync.replicas", "2")
+                .build();
     }
 
     @Bean
     @ConditionalOnProperty(name = "app.notification.transport", havingValue = "kafka", matchIfMissing = true)
     public NewTopic linkUpdatesDltTopic() {
         return TopicBuilder.name(linkUpdatesDltTopic)
-            .partitions(3)
-            .replicas(3)
-            .config("retention.ms", "2592000000")
-            .build();
+                .partitions(3)
+                .replicas(3)
+                .config("retention.ms", "2592000000")
+                .build();
     }
 
     @Bean
@@ -71,23 +71,21 @@ public class NotificationSenderConfiguration {
 
     @Bean
     public KafkaTemplate<String, LinkUpdateEvent> avroKafkaTemplate(
-        ProducerFactory<String, LinkUpdateEvent> avroProducerFactory) {
+            ProducerFactory<String, LinkUpdateEvent> avroProducerFactory) {
         return new KafkaTemplate<>(avroProducerFactory);
     }
 
     @Bean
     @ConditionalOnProperty(name = "app.notification.transport", havingValue = "http")
     public NotificationSender httpNotificationSender(
-        BotClient botClient,
-        KafkaTemplate<String, LinkUpdateEvent> avroKafkaTemplate) {
+            BotClient botClient, KafkaTemplate<String, LinkUpdateEvent> avroKafkaTemplate) {
         var kafkaFallback = new KafkaNotificationSender(avroKafkaTemplate, linkUpdatesTopic);
         return new ResilientHttpNotificationSender(botClient, kafkaFallback);
     }
 
     @Bean
     @ConditionalOnProperty(name = "app.notification.transport", havingValue = "kafka", matchIfMissing = true)
-    public NotificationSender kafkaNotificationSender(
-        KafkaTemplate<String, LinkUpdateEvent> avroKafkaTemplate) {
+    public NotificationSender kafkaNotificationSender(KafkaTemplate<String, LinkUpdateEvent> avroKafkaTemplate) {
         return new KafkaNotificationSender(avroKafkaTemplate, linkUpdatesTopic);
     }
 

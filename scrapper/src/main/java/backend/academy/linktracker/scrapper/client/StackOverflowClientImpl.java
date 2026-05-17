@@ -32,23 +32,23 @@ public class StackOverflowClientImpl implements StackOverflowClient {
     public Instant getLastActivity(long questionId) {
         try {
             var response = stackOverflowRestClient
-                .get()
-                .uri("/questions/{id}?site=stackoverflow", questionId)
-                .retrieve()
-                .body(QuestionResponse.class);
+                    .get()
+                    .uri("/questions/{id}?site=stackoverflow", questionId)
+                    .retrieve()
+                    .body(QuestionResponse.class);
 
             if (response != null
-                && response.getItems() != null
-                && !response.getItems().isEmpty()) {
+                    && response.getItems() != null
+                    && !response.getItems().isEmpty()) {
                 Long lastActivity = response.getItems().getFirst().getLastActivityDate();
                 return lastActivity != null ? Instant.ofEpochSecond(lastActivity) : null;
             }
             return null;
         } catch (RestClientException e) {
             log.atError()
-                .addKeyValue("questionId", questionId)
-                .addKeyValue("error", e.getMessage())
-                .log("stackoverflow.getLastActivity.failed");
+                    .addKeyValue("questionId", questionId)
+                    .addKeyValue("error", e.getMessage())
+                    .log("stackoverflow.getLastActivity.failed");
             throw e;
         }
     }
@@ -59,21 +59,21 @@ public class StackOverflowClientImpl implements StackOverflowClient {
     public Optional<QuestionItem> getQuestion(long questionId) {
         try {
             var response = stackOverflowRestClient
-                .get()
-                .uri("/questions/{id}?site=stackoverflow&filter=withbody", questionId)
-                .retrieve()
-                .body(QuestionResponse.class);
+                    .get()
+                    .uri("/questions/{id}?site=stackoverflow&filter=withbody", questionId)
+                    .retrieve()
+                    .body(QuestionResponse.class);
             if (response != null
-                && response.getItems() != null
-                && !response.getItems().isEmpty()) {
+                    && response.getItems() != null
+                    && !response.getItems().isEmpty()) {
                 return Optional.of(response.getItems().getFirst());
             }
             return Optional.empty();
         } catch (RestClientException e) {
             log.atError()
-                .addKeyValue("questionId", questionId)
-                .addKeyValue("error", e.getMessage())
-                .log("stackoverflow.getQuestion.failed");
+                    .addKeyValue("questionId", questionId)
+                    .addKeyValue("error", e.getMessage())
+                    .log("stackoverflow.getQuestion.failed");
             throw e;
         }
     }
@@ -85,25 +85,25 @@ public class StackOverflowClientImpl implements StackOverflowClient {
         try {
             long sinceEpoch = since.getEpochSecond();
             var response = stackOverflowRestClient
-                .get()
-                .uri(uriBuilder -> uriBuilder
-                    .path("/questions/{id}/answers")
-                    .queryParam("site", "stackoverflow")
-                    .queryParam("filter", "withbody")
-                    .queryParam("fromdate", sinceEpoch)
-                    .queryParam("order", "desc")
-                    .queryParam("sort", "creation")
-                    .queryParam("pagesize", "50")
-                    .build(questionId))
-                .retrieve()
-                .body(new ParameterizedTypeReference<StackOverflowItemsResponse<AnswerItem>>() {});
+                    .get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/questions/{id}/answers")
+                            .queryParam("site", "stackoverflow")
+                            .queryParam("filter", "withbody")
+                            .queryParam("fromdate", sinceEpoch)
+                            .queryParam("order", "desc")
+                            .queryParam("sort", "creation")
+                            .queryParam("pagesize", "50")
+                            .build(questionId))
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<StackOverflowItemsResponse<AnswerItem>>() {});
             if (response == null || response.getItems() == null) return List.of();
             return response.getItems();
         } catch (RestClientException e) {
             log.atError()
-                .addKeyValue("questionId", questionId)
-                .addKeyValue("error", e.getMessage())
-                .log("stackoverflow.getNewAnswers.failed");
+                    .addKeyValue("questionId", questionId)
+                    .addKeyValue("error", e.getMessage())
+                    .log("stackoverflow.getNewAnswers.failed");
             throw e;
         }
     }
@@ -115,25 +115,25 @@ public class StackOverflowClientImpl implements StackOverflowClient {
         try {
             long sinceEpoch = since.getEpochSecond();
             var response = stackOverflowRestClient
-                .get()
-                .uri(uriBuilder -> uriBuilder
-                    .path("/questions/{id}/comments")
-                    .queryParam("site", "stackoverflow")
-                    .queryParam("filter", "withbody")
-                    .queryParam("fromdate", sinceEpoch)
-                    .queryParam("order", "desc")
-                    .queryParam("sort", "creation")
-                    .queryParam("pagesize", "50")
-                    .build(questionId))
-                .retrieve()
-                .body(new ParameterizedTypeReference<StackOverflowItemsResponse<CommentItem>>() {});
+                    .get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/questions/{id}/comments")
+                            .queryParam("site", "stackoverflow")
+                            .queryParam("filter", "withbody")
+                            .queryParam("fromdate", sinceEpoch)
+                            .queryParam("order", "desc")
+                            .queryParam("sort", "creation")
+                            .queryParam("pagesize", "50")
+                            .build(questionId))
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<StackOverflowItemsResponse<CommentItem>>() {});
             if (response == null || response.getItems() == null) return List.of();
             return response.getItems();
         } catch (RestClientException e) {
             log.atError()
-                .addKeyValue("questionId", questionId)
-                .addKeyValue("error", e.getMessage())
-                .log("stackoverflow.getNewComments.failed");
+                    .addKeyValue("questionId", questionId)
+                    .addKeyValue("error", e.getMessage())
+                    .log("stackoverflow.getNewComments.failed");
             throw e;
         }
     }

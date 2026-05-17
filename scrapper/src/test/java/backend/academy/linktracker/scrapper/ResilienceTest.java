@@ -56,17 +56,16 @@ class ResilienceTest {
     @Test
     void getLastUpdated_timesOutWhenServiceIsSlow() {
         stubFor(get(urlPathEqualTo("/repos/user/repo"))
-            .willReturn(aResponse()
-                .withStatus(200)
-                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .withBody("""
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("""
                                 {"full_name":"user/repo","pushed_at":"2024-01-15T10:30:00Z","updated_at":"2024-01-15T10:30:00Z"}
                                 """)
-                .withFixedDelay(10000)));
+                        .withFixedDelay(10000)));
 
         long start = System.currentTimeMillis();
-        assertThatThrownBy(() -> gitHubClient.getLastUpdated("user", "repo"))
-            .isInstanceOf(Exception.class);
+        assertThatThrownBy(() -> gitHubClient.getLastUpdated("user", "repo")).isInstanceOf(Exception.class);
         long elapsed = System.currentTimeMillis() - start;
 
         assertThat(elapsed).isLessThan(28000);
@@ -75,24 +74,24 @@ class ResilienceTest {
     @Test
     void getLastUpdated_retriesOn5xxThenSucceeds() {
         stubFor(get(urlPathEqualTo("/repos/user/repo"))
-            .inScenario("retry")
-            .whenScenarioStateIs("Started")
-            .willReturn(aResponse().withStatus(500))
-            .willSetStateTo("first-failure"));
+                .inScenario("retry")
+                .whenScenarioStateIs("Started")
+                .willReturn(aResponse().withStatus(500))
+                .willSetStateTo("first-failure"));
 
         stubFor(get(urlPathEqualTo("/repos/user/repo"))
-            .inScenario("retry")
-            .whenScenarioStateIs("first-failure")
-            .willReturn(aResponse().withStatus(500))
-            .willSetStateTo("second-failure"));
+                .inScenario("retry")
+                .whenScenarioStateIs("first-failure")
+                .willReturn(aResponse().withStatus(500))
+                .willSetStateTo("second-failure"));
 
         stubFor(get(urlPathEqualTo("/repos/user/repo"))
-            .inScenario("retry")
-            .whenScenarioStateIs("second-failure")
-            .willReturn(aResponse()
-                .withStatus(200)
-                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .withBody("""
+                .inScenario("retry")
+                .whenScenarioStateIs("second-failure")
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("""
                                 {"full_name":"user/repo","pushed_at":"2024-01-15T10:30:00Z","updated_at":"2024-01-15T10:30:00Z"}
                                 """)));
 
@@ -104,19 +103,16 @@ class ResilienceTest {
 
     @Test
     void getLastUpdated_doesNotRetryOn4xx() {
-        stubFor(get(urlPathEqualTo("/repos/user/repo"))
-            .willReturn(aResponse().withStatus(404)));
+        stubFor(get(urlPathEqualTo("/repos/user/repo")).willReturn(aResponse().withStatus(404)));
 
-        assertThatThrownBy(() -> gitHubClient.getLastUpdated("user", "repo"))
-            .isInstanceOf(Exception.class);
+        assertThatThrownBy(() -> gitHubClient.getLastUpdated("user", "repo")).isInstanceOf(Exception.class);
 
         verify(1, getRequestedFor(urlPathEqualTo("/repos/user/repo")));
     }
 
     @Test
     void circuitBreaker_opensAfterFailureThreshold() {
-        stubFor(get(urlPathEqualTo("/repos/user/repo"))
-            .willReturn(aResponse().withStatus(500)));
+        stubFor(get(urlPathEqualTo("/repos/user/repo")).willReturn(aResponse().withStatus(500)));
 
         CircuitBreaker cb = circuitBreakerRegistry.circuitBreaker("githubClient");
 
@@ -132,8 +128,7 @@ class ResilienceTest {
 
     @Test
     void circuitBreaker_openStateRejectsImmediately() {
-        stubFor(get(urlPathEqualTo("/repos/user/repo"))
-            .willReturn(aResponse().withStatus(500)));
+        stubFor(get(urlPathEqualTo("/repos/user/repo")).willReturn(aResponse().withStatus(500)));
 
         CircuitBreaker cb = circuitBreakerRegistry.circuitBreaker("githubClient");
 
@@ -146,8 +141,7 @@ class ResilienceTest {
         assertThat(cb.getState()).isEqualTo(CircuitBreaker.State.OPEN);
 
         long start = System.currentTimeMillis();
-        assertThatThrownBy(() -> gitHubClient.getLastUpdated("user", "repo"))
-            .isInstanceOf(Exception.class);
+        assertThatThrownBy(() -> gitHubClient.getLastUpdated("user", "repo")).isInstanceOf(Exception.class);
         long elapsed = System.currentTimeMillis() - start;
 
         assertThat(elapsed).isLessThan(1000);

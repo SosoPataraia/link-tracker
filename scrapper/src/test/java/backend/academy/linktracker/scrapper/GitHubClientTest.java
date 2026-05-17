@@ -27,12 +27,12 @@ class GitHubClientTest {
 
     @Test
     void getLastUpdated_parsesDateCorrectly(
-        @org.wiremock.spring.InjectWireMock com.github.tomakehurst.wiremock.WireMockServer wireMock) {
+            @org.wiremock.spring.InjectWireMock com.github.tomakehurst.wiremock.WireMockServer wireMock) {
         stubFor(get(urlPathEqualTo("/repos/user/repo"))
-            .willReturn(aResponse()
-                .withStatus(200)
-                .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .withBody("""
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("""
                                 {
                                   "full_name": "user/repo",
                                   "pushed_at": "2024-01-15T10:30:00Z",
@@ -50,26 +50,24 @@ class GitHubClientTest {
 
     @Test
     void getLastUpdated_throwsOnServerError(
-        @org.wiremock.spring.InjectWireMock com.github.tomakehurst.wiremock.WireMockServer wireMock) {
+            @org.wiremock.spring.InjectWireMock com.github.tomakehurst.wiremock.WireMockServer wireMock) {
         stubFor(get(urlPathEqualTo("/repos/user/repo")).willReturn(aResponse().withStatus(500)));
 
         var restClient = RestClient.builder().baseUrl(wireMock.baseUrl()).build();
         var client = new GitHubClientImpl(restClient);
 
-        assertThatThrownBy(() -> client.getLastUpdated("user", "repo"))
-            .isInstanceOf(RestClientException.class);
+        assertThatThrownBy(() -> client.getLastUpdated("user", "repo")).isInstanceOf(RestClientException.class);
     }
 
     @Test
     void getLastUpdated_throwsOn404(
-        @org.wiremock.spring.InjectWireMock com.github.tomakehurst.wiremock.WireMockServer wireMock) {
+            @org.wiremock.spring.InjectWireMock com.github.tomakehurst.wiremock.WireMockServer wireMock) {
         stubFor(get(urlPathEqualTo("/repos/user/repo"))
-            .willReturn(aResponse().withStatus(404).withBody("{\"message\": \"Not Found\"}")));
+                .willReturn(aResponse().withStatus(404).withBody("{\"message\": \"Not Found\"}")));
 
         var restClient = RestClient.builder().baseUrl(wireMock.baseUrl()).build();
         var client = new GitHubClientImpl(restClient);
 
-        assertThatThrownBy(() -> client.getLastUpdated("user", "repo"))
-            .isInstanceOf(RestClientException.class);
+        assertThatThrownBy(() -> client.getLastUpdated("user", "repo")).isInstanceOf(RestClientException.class);
     }
 }

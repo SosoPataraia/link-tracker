@@ -1,5 +1,7 @@
 package backend.academy.linktracker.scrapper;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -14,9 +16,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class RateLimitFilterTest {
 
@@ -37,18 +36,14 @@ class RateLimitFilterTest {
 
         var controller = new LinksController(linkApiService, linkRepository);
 
-        mockMvc = MockMvcBuilders
-            .standaloneSetup(controller)
-            .addFilters(filter)
-            .build();
+        mockMvc = MockMvcBuilders.standaloneSetup(controller).addFilters(filter).build();
     }
 
     @Test
     void responseBeforeLimit_isNotRejected() throws Exception {
         when(linkApiService.getLinks(1L)).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/links").header("Tg-Chat-Id", "1"))
-            .andExpect(status().is(org.hamcrest.Matchers.not(429)));
+        mockMvc.perform(get("/links").header("Tg-Chat-Id", "1")).andExpect(status().is(org.hamcrest.Matchers.not(429)));
     }
 
     @Test
@@ -59,7 +54,6 @@ class RateLimitFilterTest {
             mockMvc.perform(get("/links").header("Tg-Chat-Id", "1"));
         }
 
-        mockMvc.perform(get("/links").header("Tg-Chat-Id", "1"))
-            .andExpect(status().isTooManyRequests());
+        mockMvc.perform(get("/links").header("Tg-Chat-Id", "1")).andExpect(status().isTooManyRequests());
     }
 }

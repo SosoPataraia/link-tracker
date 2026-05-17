@@ -17,13 +17,12 @@ public class ClientConfiguration {
 
     private HttpComponentsClientHttpRequestFactory requestFactory(HttpClientProperties props) {
         var requestConfig = RequestConfig.custom()
-            .setConnectionRequestTimeout(Timeout.of(props.getConnectTimeout()))
-            .setResponseTimeout(Timeout.of(props.getReadTimeout()))
-            .build();
+                .setConnectionRequestTimeout(Timeout.of(props.getConnectTimeout()))
+                .setResponseTimeout(Timeout.of(props.getReadTimeout()))
+                .build();
 
-        var httpClient = HttpClients.custom()
-            .setDefaultRequestConfig(requestConfig)
-            .build();
+        var httpClient =
+                HttpClients.custom().setDefaultRequestConfig(requestConfig).build();
 
         return new HttpComponentsClientHttpRequestFactory(httpClient);
     }
@@ -31,10 +30,10 @@ public class ClientConfiguration {
     @Bean
     public RestClient gitHubRestClient(GithubProperties properties, HttpClientProperties httpClientProperties) {
         RestClient.Builder builder = RestClient.builder()
-            .baseUrl(properties.getBaseUrl())
-            .requestFactory(requestFactory(httpClientProperties))
-            .defaultHeader("Accept", "application/vnd.github+json")
-            .defaultHeader("X-GitHub-Api-Version", "2022-11-28");
+                .baseUrl(properties.getBaseUrl())
+                .requestFactory(requestFactory(httpClientProperties))
+                .defaultHeader("Accept", "application/vnd.github+json")
+                .defaultHeader("X-GitHub-Api-Version", "2022-11-28");
 
         if (properties.getToken() != null && !properties.getToken().isBlank()) {
             builder.defaultHeader("Authorization", "Bearer " + properties.getToken());
@@ -44,19 +43,19 @@ public class ClientConfiguration {
 
     @Bean
     public RestClient stackOverflowRestClient(
-        StackoverflowProperties properties, HttpClientProperties httpClientProperties) {
+            StackoverflowProperties properties, HttpClientProperties httpClientProperties) {
         return RestClient.builder()
-            .baseUrl(properties.getBaseUrl())
-            .requestFactory(requestFactory(httpClientProperties))
-            .defaultHeader("Accept", "application/json")
-            .build();
+                .baseUrl(properties.getBaseUrl())
+                .requestFactory(requestFactory(httpClientProperties))
+                .defaultHeader("Accept", "application/json")
+                .build();
     }
 
     @Bean
     public RestClient botRestClient(BotProperties properties, HttpClientProperties httpClientProperties) {
         return RestClient.builder()
-            .baseUrl(properties.getBaseUrl())
-            .requestFactory(requestFactory(httpClientProperties))
-            .build();
+                .baseUrl(properties.getBaseUrl())
+                .requestFactory(requestFactory(httpClientProperties))
+                .build();
     }
 }
