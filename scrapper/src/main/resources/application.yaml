@@ -61,6 +61,8 @@ app:
     retryable-status-codes: 500,502,503,504
     retry-wait-duration: 500ms
     retry-max-attempts: 3
+    retry-exponential-backoff-enabled: false
+    retry-exponential-backoff-multiplier: 2
   rate-limit:
     capacity: 50
     refill-tokens: 50
@@ -101,6 +103,8 @@ resilience4j:
       githubClient:
         max-attempts: ${app.resilience.retry-max-attempts}
         wait-duration: ${app.resilience.retry-wait-duration}
+        enable-exponential-backoff: ${app.resilience.retry-exponential-backoff-enabled:false}
+        exponential-backoff-multiplier: ${app.resilience.retry-exponential-backoff-multiplier:2}
         retry-exceptions:
           - org.springframework.web.client.HttpServerErrorException
           - java.io.IOException
@@ -110,6 +114,8 @@ resilience4j:
       stackOverflowClient:
         max-attempts: ${app.resilience.retry-max-attempts}
         wait-duration: ${app.resilience.retry-wait-duration}
+        enable-exponential-backoff: ${app.resilience.retry-exponential-backoff-enabled:false}
+        exponential-backoff-multiplier: ${app.resilience.retry-exponential-backoff-multiplier:2}
         retry-exceptions:
           - org.springframework.web.client.HttpServerErrorException
           - java.io.IOException

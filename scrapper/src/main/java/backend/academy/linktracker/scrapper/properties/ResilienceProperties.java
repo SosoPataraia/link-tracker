@@ -15,6 +15,10 @@ import org.springframework.validation.annotation.Validated;
 @Setter
 public class ResilienceProperties {
 
+    private boolean retryExponentialBackoffEnabled = false;
+
+    private double retryExponentialBackoffMultiplier = 2.0;
+
     @NotEmpty
     private List<Integer> retryableStatusCodes = List.of(500, 502, 503, 504);
 
