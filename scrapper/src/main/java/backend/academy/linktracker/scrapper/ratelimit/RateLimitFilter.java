@@ -29,7 +29,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
         throws ServletException, IOException {
 
-        String ip = request.getRemoteAddr();
+        String ip = request.getRemoteAddr() != null ? request.getRemoteAddr() : "unknown";
         Bucket bucket = buckets.computeIfAbsent(ip, this::newBucket);
 
         if (bucket.tryConsume(1)) {
