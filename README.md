@@ -198,6 +198,46 @@ Topics are created programmatically via Spring Kafka `NewTopic` beans on applica
 | Replication factor | 3                    | Dead letters are important for debugging — keep them safe                |
 | `retention.ms`     | 2592000000 (30 days) | Longer retention — these need manual review and shouldn't expire quickly |
 
+## Resilience (HW-7)
+
+The scrapper protects all outgoing HTTP calls (GitHub, StackOverflow, bot) with timeout, retry, circuit breaker, and a Kafka fallback. Public endpoints are rate-limited per IP.
+
+### How it works
+
+- **Timeout** — every `RestClient` uses `HttpComponentsClientHttpRequestFactory` with configurable connect/read timeouts. A slow service fails fast instead of blocking a thread.
+- **Retry** — failed calls are retried with constant backoff (default) or exponential backoff (opt-in). Whether a failure is retryable is decided by the configured HTTP status code list, not hardcoded.
+- **Circuit Breaker** — a COUNT_BASED sliding window tracks failures per client. After the failure threshold the breaker opens and calls fail immediately; after `wait-duration-in-open-state` it allows trial calls (HALF-OPEN) and closes again if they succeed.
+- **Fallback** — when `app.notification.transport=http`, if the bot's HTTP endpoint is unavailable and the breaker opens, notifications are automatically rerouted to Kafka so updates are never silently lost.
+- **Rate Limiting** — a Bucket4j token-bucket filter limits requests per client IP. Exceeding the limit returns HTTP 429.
+
+### Resilience configuration
+
+|                       Property                        |      Default      |                  Description                   |
+|-------------------------------------------------------|-------------------|------------------------------------------------|
+| `app.http-client.connect-timeout`                     | `3s`              | TCP connect timeout                            |
+| `app.http-client.read-timeout`                        | `5s`              | Response read timeout                          |
+| `app.resilience.retry-max-attempts`                   | `3`               | Total retry attempts                           |
+| `app.resilience.retry-wait-duration`                  | `500ms`           | Delay between retries (constant backoff)       |
+| `app.resilience.retryable-status-codes`               | `500,502,503,504` | HTTP statuses that trigger a retry             |
+| `app.resilience.retry-exponential-backoff-enabled`    | `false`           | Use exponential instead of constant backoff    |
+| `app.resilience.retry-exponential-backoff-multiplier` | `2`               | Multiplier when exponential backoff is enabled |
+| `app.rate-limit.capacity`                             | `50`              | Max requests per IP in a window                |
+| `app.rate-limit.refill-tokens`                        | `50`              | Tokens refilled per period                     |
+| `app.rate-limit.refill-period`                        | `1m`              | Refill period                                  |
+
+Circuit breaker parameters (`sliding-window-size`, `failure-rate-threshold`, `wait-duration-in-open-state`, etc.) are configured per client under `resilience4j.circuitbreaker.instances` in `application.yaml`.
+
+### Switching retry strategy
+
+Constant backoff is the default. To use exponential backoff instead:
+
+```yaml
+app:
+  resilience:
+    retry-exponential-backoff-enabled: true
+    retry-exponential-backoff-multiplier: 2
+```
+
 ## Troubleshooting
 
 ### Port 5432 conflict (Windows)
