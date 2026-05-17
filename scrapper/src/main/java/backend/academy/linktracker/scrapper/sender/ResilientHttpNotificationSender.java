@@ -25,7 +25,7 @@ public class ResilientHttpNotificationSender implements NotificationSender {
         botClient.sendUpdate(update);
     }
 
-    void sendViaKafka(LinkUpdate update, Throwable cause) {
+    public void sendViaKafka(LinkUpdate update, Throwable cause) {
         log.atWarn()
             .addKeyValue("url", update.getUrl())
             .addKeyValue("reason", cause.getMessage())
