@@ -1,15 +1,16 @@
 package backend.academy.linktracker.scrapper.service;
 
+import backend.academy.linktracker.scrapper.client.BotClient;
 import backend.academy.linktracker.scrapper.client.GitHubClient;
 import backend.academy.linktracker.scrapper.client.StackOverflowClient;
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;
+import backend.academy.linktracker.scrapper.dto.UpdateDescription;
 import backend.academy.linktracker.scrapper.dto.github.IssueItem;
 import backend.academy.linktracker.scrapper.dto.stackoverflow.AnswerItem;
 import backend.academy.linktracker.scrapper.dto.stackoverflow.CommentItem;
 import backend.academy.linktracker.scrapper.dto.stackoverflow.QuestionItem;
 import backend.academy.linktracker.scrapper.model.TrackedLink;
 import backend.academy.linktracker.scrapper.repository.LinkRepository;
-import backend.academy.linktracker.scrapper.sender.NotificationSender;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,22 +35,28 @@ public class LinkCheckerService {
     private final LinkRepository linkRepository;
     private final GitHubClient gitHubClient;
     private final StackOverflowClient stackOverflowClient;
-    private final NotificationSender notificationSender;
+    private final BotClient botClient;
 
     /**
-     * Checks all links and sends updates. Called by the scheduler.
-     * Groups links by URL so each external API is called once per unique URL.
+     * Checks the given links and sends updates. Groups links by URL so each
+     * external API is called once per unique URL. A failure on one URL does
+     * not affect the others.
+     *
+     * @return list of URLs that could not be processed
      */
-    public void checkLinks(Collection<TrackedLink> links) {
+    public List<String> checkLinks(Collection<TrackedLink> links) {
         Map<String, List<TrackedLink>> byUrl = links.stream().collect(Collectors.groupingBy(TrackedLink::getUrl));
 
+        List<String> failedUrls = new ArrayList<>();
         byUrl.forEach((url, subscribers) -> {
             try {
                 checkUrl(url, subscribers);
             } catch (Exception e) {
                 log.error("Unhandled error checking url={}", url, e);
+                failedUrls.add(url);
             }
         });
+        return failedUrls;
     }
 
     private void checkUrl(String url, List<TrackedLink> subscribers) {
@@ -80,11 +87,12 @@ public class LinkCheckerService {
 
             for (UpdateDescription desc : updates) {
                 var linkUpdate = new LinkUpdate(representativeLinkId, url, desc.format(url), chatIds);
-                notificationSender.send(linkUpdate);
+                botClient.sendUpdate(linkUpdate);
                 log.info("Sent update type={} url={} chatIds={}", desc.getType(), url, chatIds);
             }
         }
 
+        // Update last_checked for all subscribers regardless of whether updates were found
         Instant now = Instant.now();
         subscribers.stream()
                 .map(TrackedLink::getId)
@@ -123,6 +131,7 @@ public class LinkCheckerService {
     private List<UpdateDescription> checkStackOverflow(long questionId, Instant since) {
         List<UpdateDescription> result = new ArrayList<>();
 
+        // Fetch question title once for use in all update messages
         String questionTitle = stackOverflowClient
                 .getQuestion(questionId)
                 .map(QuestionItem::getTitle)

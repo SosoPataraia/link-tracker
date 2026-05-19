@@ -2,7 +2,7 @@ package backend.academy.linktracker.scrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import backend.academy.linktracker.scrapper.service.UpdateDescription;
+import backend.academy.linktracker.scrapper.dto.UpdateDescription;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 

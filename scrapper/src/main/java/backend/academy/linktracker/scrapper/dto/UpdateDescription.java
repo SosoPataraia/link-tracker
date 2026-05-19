@@ -1,4 +1,4 @@
-package backend.academy.linktracker.scrapper.service;
+package backend.academy.linktracker.scrapper.dto;
 
 import java.time.Instant;
 import lombok.Getter;

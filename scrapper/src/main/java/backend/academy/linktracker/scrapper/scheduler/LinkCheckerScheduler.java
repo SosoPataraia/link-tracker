@@ -10,7 +10,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -79,6 +78,7 @@ public class LinkCheckerScheduler {
     /**
      * Splits the batch into {@code threadCount} sublists, submits each to the executor,
      * waits for all to finish, collects failed URLs.
+     * Grouping by URL and per-URL error isolation is handled by LinkCheckerService.
      */
     private List<String> processBatchParallel(List<TrackedLink> batch, int threadCount, ExecutorService executor) {
 
@@ -86,7 +86,7 @@ public class LinkCheckerScheduler {
         List<Future<List<String>>> futures = new ArrayList<>();
 
         for (List<TrackedLink> sublist : sublists) {
-            futures.add(executor.submit(() -> processSublist(sublist)));
+            futures.add(executor.submit(() -> linkCheckerService.checkLinks(sublist)));
         }
 
         List<String> failures = new ArrayList<>();
@@ -100,27 +100,6 @@ public class LinkCheckerScheduler {
                 log.error("Unexpected error in scheduler thread", e.getCause());
             }
         }
-        return failures;
-    }
-
-    /**
-     * Processes one sublist. Each URL's failure is isolated — others continue.
-     * Returns list of URLs that failed.
-     */
-    private List<String> processSublist(List<TrackedLink> links) {
-        List<String> failures = new ArrayList<>();
-
-        var byUrl = links.stream().collect(Collectors.groupingBy(TrackedLink::getUrl));
-
-        byUrl.forEach((url, subscribers) -> {
-            try {
-                linkCheckerService.checkLinks(subscribers);
-            } catch (Exception e) {
-                log.error("Failed to process url={}", url, e);
-                failures.add(url);
-            }
-        });
-
         return failures;
     }
 
