@@ -11,6 +11,8 @@ spring:
       auto-offset-reset: earliest
     producer:
       acks: all
+    schema-registry:
+      url: ${SCHEMA_REGISTRY_URL:mock://test}
 
 app:
   kafka:
