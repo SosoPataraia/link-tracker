@@ -4,3 +4,32 @@ server:
 spring:
   application:
     name: ai-agent
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: ai-agent-group
+      auto-offset-reset: earliest
+    producer:
+      acks: all
+
+app:
+  kafka:
+    topic:
+      raw-updates: link.raw-updates
+      processed-updates: link.processed-updates
+
+ai-agent:
+  filtering:
+    stop-words:
+      - spam
+      - ads
+      - promo
+    excluded-authors:
+      - bot-user
+    min-length: 20
+  summarization:
+    threshold: 500
+    mode: ai
+  ai-api:
+    url: ${HUGGINGFACE_API_URL:https://api-inference.huggingface.co/models/facebook/bart-large-cnn}
+    token: ${HUGGINGFACE_TOKEN:}
