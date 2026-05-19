@@ -1,0 +1,11 @@
+{
+    "type": "record",
+    "name": "ProcessedUpdateEvent",
+    "namespace": "backend.academy.linktracker.avro",
+    "fields": [
+        {"name": "id",          "type": "long"},
+        {"name": "description", "type": ["null", "string"], "default": null},
+        {"name": "tgChatIds",   "type": {"type": "array", "items": "long"}, "default": []},
+        {"name": "priority",    "type": {"type": "enum", "name": "Priority", "symbols": ["HIGH", "NORMAL", "LOW"]}, "default": "NORMAL"}
+    ]
+}
