@@ -1,6 +1,5 @@
 package backend.academy.linktracker.scrapper.service;
 
-import backend.academy.linktracker.scrapper.client.BotClient;
 import backend.academy.linktracker.scrapper.client.GitHubClient;
 import backend.academy.linktracker.scrapper.client.StackOverflowClient;
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;
@@ -11,6 +10,7 @@ import backend.academy.linktracker.scrapper.dto.stackoverflow.CommentItem;
 import backend.academy.linktracker.scrapper.dto.stackoverflow.QuestionItem;
 import backend.academy.linktracker.scrapper.model.TrackedLink;
 import backend.academy.linktracker.scrapper.repository.LinkRepository;
+import backend.academy.linktracker.scrapper.sender.NotificationSender;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,20 +30,13 @@ public class LinkCheckerService {
 
     private static final Pattern GITHUB_PATTERN = Pattern.compile("https?://github\\.com/([^/]+)/([^/?#]+).*");
     private static final Pattern STACKOVERFLOW_PATTERN =
-            Pattern.compile("https?://stackoverflow\\.com/questions/(\\d+).*");
+        Pattern.compile("https?://stackoverflow\\.com/questions/(\\d+).*");
 
     private final LinkRepository linkRepository;
     private final GitHubClient gitHubClient;
     private final StackOverflowClient stackOverflowClient;
-    private final BotClient botClient;
+    private final NotificationSender notificationSender;
 
-    /**
-     * Checks the given links and sends updates. Groups links by URL so each
-     * external API is called once per unique URL. A failure on one URL does
-     * not affect the others.
-     *
-     * @return list of URLs that could not be processed
-     */
     public List<String> checkLinks(Collection<TrackedLink> links) {
         Map<String, List<TrackedLink>> byUrl = links.stream().collect(Collectors.groupingBy(TrackedLink::getUrl));
 
@@ -61,10 +54,10 @@ public class LinkCheckerService {
 
     private void checkUrl(String url, List<TrackedLink> subscribers) {
         Instant since = subscribers.stream()
-                .map(TrackedLink::getLastChecked)
-                .filter(t -> t != null)
-                .min(Instant::compareTo)
-                .orElse(Instant.EPOCH);
+            .map(TrackedLink::getLastChecked)
+            .filter(t -> t != null)
+            .min(Instant::compareTo)
+            .orElse(Instant.EPOCH);
 
         List<UpdateDescription> updates = new ArrayList<>();
 
@@ -82,22 +75,25 @@ public class LinkCheckerService {
 
         if (!updates.isEmpty()) {
             List<Long> chatIds =
-                    subscribers.stream().map(TrackedLink::getChatId).distinct().toList();
+                subscribers.stream().map(TrackedLink::getChatId).distinct().toList();
             long representativeLinkId = subscribers.getFirst().getId();
 
             for (UpdateDescription desc : updates) {
                 var linkUpdate = new LinkUpdate(representativeLinkId, url, desc.format(url), chatIds);
-                botClient.sendUpdate(linkUpdate);
-                log.info("Sent update type={} url={} chatIds={}", desc.getType(), url, chatIds);
+                notificationSender.send(linkUpdate);
+                log.atInfo()
+                    .addKeyValue("type", desc.getType())
+                    .addKeyValue("url", url)
+                    .addKeyValue("chatIds", chatIds)
+                    .log("update.sent");
             }
         }
 
-        // Update last_checked for all subscribers regardless of whether updates were found
         Instant now = Instant.now();
         subscribers.stream()
-                .map(TrackedLink::getId)
-                .distinct()
-                .forEach(id -> linkRepository.updateLastChecked(id, now));
+            .map(TrackedLink::getId)
+            .distinct()
+            .forEach(id -> linkRepository.updateLastChecked(id, now));
     }
 
     private List<UpdateDescription> checkGitHub(String owner, String repo, Instant since) {
@@ -106,23 +102,23 @@ public class LinkCheckerService {
         List<IssueItem> newIssues = gitHubClient.getNewIssues(owner, repo, since);
         for (IssueItem issue : newIssues) {
             result.add(new UpdateDescription(
-                    UpdateDescription.Type.NEW_ISSUE,
-                    null,
-                    issue.getTitle(),
-                    issue.getUser() != null ? issue.getUser().getLogin() : "unknown",
-                    issue.getCreatedAt() != null ? issue.getCreatedAt() : Instant.now(),
-                    UpdateDescription.truncate(issue.getBody())));
+                UpdateDescription.Type.NEW_ISSUE,
+                null,
+                issue.getTitle(),
+                issue.getUser() != null ? issue.getUser().getLogin() : "unknown",
+                issue.getCreatedAt() != null ? issue.getCreatedAt() : Instant.now(),
+                UpdateDescription.truncate(issue.getBody())));
         }
 
         List<IssueItem> newPRs = gitHubClient.getNewPullRequests(owner, repo, since);
         for (IssueItem pr : newPRs) {
             result.add(new UpdateDescription(
-                    UpdateDescription.Type.NEW_PR,
-                    null,
-                    pr.getTitle(),
-                    pr.getUser() != null ? pr.getUser().getLogin() : "unknown",
-                    pr.getCreatedAt() != null ? pr.getCreatedAt() : Instant.now(),
-                    UpdateDescription.truncate(pr.getBody())));
+                UpdateDescription.Type.NEW_PR,
+                null,
+                pr.getTitle(),
+                pr.getUser() != null ? pr.getUser().getLogin() : "unknown",
+                pr.getCreatedAt() != null ? pr.getCreatedAt() : Instant.now(),
+                UpdateDescription.truncate(pr.getBody())));
         }
 
         return result;
@@ -131,39 +127,38 @@ public class LinkCheckerService {
     private List<UpdateDescription> checkStackOverflow(long questionId, Instant since) {
         List<UpdateDescription> result = new ArrayList<>();
 
-        // Fetch question title once for use in all update messages
         String questionTitle = stackOverflowClient
-                .getQuestion(questionId)
-                .map(QuestionItem::getTitle)
-                .orElse(null);
+            .getQuestion(questionId)
+            .map(QuestionItem::getTitle)
+            .orElse(null);
 
         List<AnswerItem> newAnswers = stackOverflowClient.getNewAnswers(questionId, since);
         for (AnswerItem answer : newAnswers) {
             String username = answer.getOwner() != null ? answer.getOwner().getDisplayName() : "unknown";
             Instant createdAt =
-                    answer.getCreationDate() != null ? Instant.ofEpochSecond(answer.getCreationDate()) : Instant.now();
+                answer.getCreationDate() != null ? Instant.ofEpochSecond(answer.getCreationDate()) : Instant.now();
             result.add(new UpdateDescription(
-                    UpdateDescription.Type.NEW_ANSWER,
-                    questionTitle,
-                    null,
-                    username,
-                    createdAt,
-                    UpdateDescription.truncate(answer.getBody())));
+                UpdateDescription.Type.NEW_ANSWER,
+                questionTitle,
+                null,
+                username,
+                createdAt,
+                UpdateDescription.truncate(answer.getBody())));
         }
 
         List<CommentItem> newComments = stackOverflowClient.getNewComments(questionId, since);
         for (CommentItem comment : newComments) {
             String username = comment.getOwner() != null ? comment.getOwner().getDisplayName() : "unknown";
             Instant createdAt = comment.getCreationDate() != null
-                    ? Instant.ofEpochSecond(comment.getCreationDate())
-                    : Instant.now();
+                ? Instant.ofEpochSecond(comment.getCreationDate())
+                : Instant.now();
             result.add(new UpdateDescription(
-                    UpdateDescription.Type.NEW_COMMENT,
-                    questionTitle,
-                    null,
-                    username,
-                    createdAt,
-                    UpdateDescription.truncate(comment.getBody())));
+                UpdateDescription.Type.NEW_COMMENT,
+                questionTitle,
+                null,
+                username,
+                createdAt,
+                UpdateDescription.truncate(comment.getBody())));
         }
 
         return result;
