@@ -64,12 +64,31 @@ public class KafkaConfig {
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
         props.put("schema.registry.url", schemaRegistryUrl);
         props.put(ProducerConfig.ACKS_CONFIG, "all");
+        props.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 10000);
         return new DefaultKafkaProducerFactory<>(props);
     }
 
-    @Bean
+    @Bean("processedKafkaTemplate")
     public KafkaTemplate<String, ProcessedUpdateEvent> kafkaTemplate(
         ProducerFactory<String, ProcessedUpdateEvent> producerFactory) {
         return new KafkaTemplate<>(producerFactory);
+    }
+
+    @Bean
+    public ProducerFactory<String, RawUpdateEvent> rawProducerFactory() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
+        props.put("schema.registry.url", schemaRegistryUrl);
+        props.put(ProducerConfig.ACKS_CONFIG, "all");
+        props.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 10000);
+        return new DefaultKafkaProducerFactory<>(props);
+    }
+
+    @Bean("rawKafkaTemplate")
+    public KafkaTemplate<String, RawUpdateEvent> rawKafkaTemplate(
+        ProducerFactory<String, RawUpdateEvent> rawProducerFactory) {
+        return new KafkaTemplate<>(rawProducerFactory);
     }
 }
