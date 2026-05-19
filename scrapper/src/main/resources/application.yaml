@@ -47,8 +47,8 @@ app:
     transport: kafka
     kafka:
       topic:
-        link-updates: link-updates
-        link-updates-dlt: link-updates.DLT
+        link-updates: link.raw-updates
+        link-updates-dlt: link.raw-updates.DLT
   outbox:
     poll-interval-ms: 1000
   cache:

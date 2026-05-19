@@ -6,7 +6,7 @@ app:
     debug: true
   kafka:
     topic:
-      link-updates: link-updates
+      link-updates: link.processed-updates
 
 spring:
   kafka:

@@ -16,13 +16,16 @@ public class KafkaNotificationSender implements NotificationSender {
     @Override
     public void send(LinkUpdate update) {
         var event = LinkUpdateEvent.newBuilder()
-                .setId(update.getId())
-                .setUrl(update.getUrl())
-                .setDescription(update.getDescription())
-                .setTgChatIds(update.getTgChatIds())
-                .build();
-
-        log.info("Sending update via Kafka (Avro): url={} topic={}", update.getUrl(), topicName);
+            .setId(update.getId())
+            .setUrl(update.getUrl())
+            .setDescription(update.getDescription())
+            .setAuthor(null)
+            .setTgChatIds(update.getTgChatIds())
+            .build();
+        log.atInfo()
+            .addKeyValue("url", update.getUrl())
+            .addKeyValue("topic", topicName)
+            .log("kafka.notification.sending");
         kafkaTemplate.send(topicName, String.valueOf(update.getId()), event);
     }
 }

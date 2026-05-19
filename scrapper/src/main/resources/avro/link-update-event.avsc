@@ -1,31 +1,12 @@
 {
-  "type": "record",
-  "name": "LinkUpdateEvent",
-  "namespace": "backend.academy.linktracker.avro",
-  "fields": [
-    {
-      "name": "id",
-      "type": "long",
-      "doc": "ID ссылки"
-    },
-    {
-      "name": "url",
-      "type": "string",
-      "doc": "Ссылка"
-    },
-    {
-      "name": "description",
-      "type": ["null", "string"],
-      "default": null,
-      "doc": "Описание изменений"
-    },
-    {
-      "name": "tgChatIds",
-      "type": {
-        "type": "array",
-        "items": "long"
-      },
-      "doc": "ИД чатов"
-    }
-  ]
+    "type": "record",
+    "name": "LinkUpdateEvent",
+    "namespace": "backend.academy.linktracker.avro",
+    "fields": [
+        {"name": "id",          "type": "long"},
+        {"name": "url",         "type": "string"},
+        {"name": "description", "type": ["null", "string"], "default": null},
+        {"name": "author",      "type": ["null", "string"], "default": null},
+        {"name": "tgChatIds",   "type": {"type": "array", "items": "long"}, "default": []}
+    ]
 }
