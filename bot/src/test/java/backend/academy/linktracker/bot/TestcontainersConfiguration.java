@@ -1,6 +1,6 @@
 package backend.academy.linktracker.bot;
 
-import backend.academy.linktracker.avro.LinkUpdateEvent;
+import backend.academy.linktracker.avro.ProcessedUpdateEvent;
 import com.redis.testcontainers.RedisContainer;
 import io.confluent.kafka.schemaregistry.avro.AvroSchema;
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
@@ -23,16 +23,10 @@ import org.testcontainers.utility.DockerImageName;
 @TestConfiguration(proxyBeanMethods = false)
 class TestcontainersConfiguration {
 
-    // Uncomment to start PostgreSQLContainer
-    // @Bean
-    // @ServiceConnection
     PostgreSQLContainer postgresContainer() {
         return new PostgreSQLContainer(DockerImageName.parse("postgres:18-alpine"));
     }
 
-    // Uncomment to start RedisContainer
-    // @Bean
-    // @ServiceConnection
     RedisContainer redisContainer() {
         return new RedisContainer(DockerImageName.parse("redis:8.2-alpine"));
     }
@@ -53,7 +47,7 @@ class TestcontainersConfiguration {
     @Bean
     SchemaRegistryClient mockSchemaRegistryClient() throws Exception {
         var client = new MockSchemaRegistryClient();
-        client.register("link-updates-value", new AvroSchema(LinkUpdateEvent.getClassSchema()));
+        client.register("link.processed-updates-value", new AvroSchema(ProcessedUpdateEvent.getClassSchema()));
         return client;
     }
 
@@ -68,7 +62,7 @@ class TestcontainersConfiguration {
     }
 
     @Bean
-    KafkaTemplate<String, LinkUpdateEvent> avroTestKafkaTemplate(
+    KafkaTemplate<String, ProcessedUpdateEvent> avroTestKafkaTemplate(
             KafkaContainer kafkaContainer, SchemaRegistryClient schemaRegistryClient) {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
@@ -78,7 +72,7 @@ class TestcontainersConfiguration {
         var serializer = new KafkaAvroSerializer(schemaRegistryClient);
         serializer.configure(props, false);
 
-        var factory = new DefaultKafkaProducerFactory<String, LinkUpdateEvent>(props);
+        var factory = new DefaultKafkaProducerFactory<String, ProcessedUpdateEvent>(props);
         factory.setValueSerializer((topic, data) -> serializer.serialize(topic, data));
         return new KafkaTemplate<>(factory);
     }
