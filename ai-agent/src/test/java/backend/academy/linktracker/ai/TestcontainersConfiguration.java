@@ -9,8 +9,7 @@ import org.testcontainers.utility.DockerImageName;
 @TestConfiguration(proxyBeanMethods = false)
 public class TestcontainersConfiguration {
 
-    public static final KafkaContainer KAFKA =
-        new KafkaContainer(DockerImageName.parse("apache/kafka-native:3.8.0"));
+    public static final KafkaContainer KAFKA = new KafkaContainer(DockerImageName.parse("apache/kafka-native:3.8.0"));
 
     static {
         KAFKA.start();

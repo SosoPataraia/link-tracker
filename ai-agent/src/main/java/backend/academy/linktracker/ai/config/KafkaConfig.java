@@ -49,7 +49,7 @@ public class KafkaConfig {
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, RawUpdateEvent> kafkaListenerContainerFactory(
-        ConsumerFactory<String, RawUpdateEvent> consumerFactory) {
+            ConsumerFactory<String, RawUpdateEvent> consumerFactory) {
         var factory = new ConcurrentKafkaListenerContainerFactory<String, RawUpdateEvent>();
         factory.setConsumerFactory(consumerFactory);
         factory.setCommonErrorHandler(new CommonLoggingErrorHandler());
@@ -70,7 +70,7 @@ public class KafkaConfig {
 
     @Bean("processedKafkaTemplate")
     public KafkaTemplate<String, ProcessedUpdateEvent> kafkaTemplate(
-        ProducerFactory<String, ProcessedUpdateEvent> producerFactory) {
+            ProducerFactory<String, ProcessedUpdateEvent> producerFactory) {
         return new KafkaTemplate<>(producerFactory);
     }
 
@@ -88,7 +88,7 @@ public class KafkaConfig {
 
     @Bean("rawKafkaTemplate")
     public KafkaTemplate<String, RawUpdateEvent> rawKafkaTemplate(
-        ProducerFactory<String, RawUpdateEvent> rawProducerFactory) {
+            ProducerFactory<String, RawUpdateEvent> rawProducerFactory) {
         return new KafkaTemplate<>(rawProducerFactory);
     }
 }

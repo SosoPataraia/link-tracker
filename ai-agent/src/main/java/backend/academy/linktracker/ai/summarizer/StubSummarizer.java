@@ -18,9 +18,9 @@ public class StubSummarizer implements Summarizer {
     public String summarize(String text) {
         int threshold = properties.summarization().threshold();
         log.atInfo()
-            .addKeyValue("originalLength", text.length())
-            .addKeyValue("threshold", threshold)
-            .log("summarizer.stub.truncating");
+                .addKeyValue("originalLength", text.length())
+                .addKeyValue("threshold", threshold)
+                .log("summarizer.stub.truncating");
         return text.substring(0, threshold) + "...";
     }
 }

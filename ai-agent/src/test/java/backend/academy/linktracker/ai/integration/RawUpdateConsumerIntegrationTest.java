@@ -1,5 +1,8 @@
 package backend.academy.linktracker.ai.integration;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+
 import backend.academy.linktracker.ai.TestcontainersConfiguration;
 import backend.academy.linktracker.avro.ProcessedUpdateEvent;
 import backend.academy.linktracker.avro.RawUpdateEvent;
@@ -30,15 +33,9 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 import org.testcontainers.kafka.KafkaContainer;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
-@TestPropertySource(properties = {
-    "spring.kafka.schema-registry.url=mock://test",
-    "ai-agent.summarization.mode=stub"
-})
+@TestPropertySource(properties = {"spring.kafka.schema-registry.url=mock://test", "ai-agent.summarization.mode=stub"})
 class RawUpdateConsumerIntegrationTest {
 
     private static final String SCHEMA_REGISTRY_URL = "mock://test";
@@ -47,8 +44,7 @@ class RawUpdateConsumerIntegrationTest {
 
     @DynamicPropertySource
     static void kafkaProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.kafka.bootstrap-servers",
-            TestcontainersConfiguration.KAFKA::getBootstrapServers);
+        registry.add("spring.kafka.bootstrap-servers", TestcontainersConfiguration.KAFKA::getBootstrapServers);
     }
 
     @Autowired
@@ -61,11 +57,11 @@ class RawUpdateConsumerIntegrationTest {
     @Test
     void whenValidMessagePublished_thenProcessedMessageAppearsInOutputTopic() {
         RawUpdateEvent event = RawUpdateEvent.newBuilder()
-            .setId(42L)
-            .setDescription("A valid update with sufficient length to pass all filters and checks")
-            .setAuthor("normal-user")
-            .setTgChatIds(List.of(111L, 222L))
-            .build();
+                .setId(42L)
+                .setDescription("A valid update with sufficient length to pass all filters and checks")
+                .setAuthor("normal-user")
+                .setTgChatIds(List.of(111L, 222L))
+                .build();
 
         rawKafkaTemplate.send(RAW_TOPIC, "42", event);
 
@@ -86,26 +82,36 @@ class RawUpdateConsumerIntegrationTest {
     @Test
     void whenMalformedMessagePublished_thenServiceDoesNotCrash() throws Exception {
         try (var rawProducer = new KafkaProducer<String, String>(Map.of(
-            ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
-            TestcontainersConfiguration.KAFKA.getBootstrapServers(),
-            ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class,
-            ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class))) {
-            rawProducer.send(new ProducerRecord<>(RAW_TOPIC, "bad", "not-avro-bytes")).get();
+                ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                TestcontainersConfiguration.KAFKA.getBootstrapServers(),
+                ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+                StringSerializer.class,
+                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                StringSerializer.class))) {
+            rawProducer
+                    .send(new ProducerRecord<>(RAW_TOPIC, "bad", "not-avro-bytes"))
+                    .get();
         }
 
-        await().atMost(Duration.ofSeconds(10)).untilAsserted(() ->
-            assertThat(kafkaContainer.isRunning()).isTrue());
+        await().atMost(Duration.ofSeconds(10))
+                .untilAsserted(() -> assertThat(kafkaContainer.isRunning()).isTrue());
     }
 
     private KafkaConsumer<String, ProcessedUpdateEvent> buildProcessedConsumer() {
         return new KafkaConsumer<>(Map.of(
-            ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
-            TestcontainersConfiguration.KAFKA.getBootstrapServers(),
-            ConsumerConfig.GROUP_ID_CONFIG, "test-group-" + UUID.randomUUID(),
-            ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest",
-            ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class,
-            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, KafkaAvroDeserializer.class,
-            KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG, SCHEMA_REGISTRY_URL,
-            KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG, true));
+                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                TestcontainersConfiguration.KAFKA.getBootstrapServers(),
+                ConsumerConfig.GROUP_ID_CONFIG,
+                "test-group-" + UUID.randomUUID(),
+                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
+                "earliest",
+                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                StringDeserializer.class,
+                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                KafkaAvroDeserializer.class,
+                KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG,
+                SCHEMA_REGISTRY_URL,
+                KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG,
+                true));
     }
 }

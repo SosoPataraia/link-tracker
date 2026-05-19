@@ -11,20 +11,17 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties(prefix = "ai-agent")
 public record AiAgentProperties(
-    @Valid @NotNull Filtering filtering,
-    @Valid @NotNull Summarization summarization,
-    @Valid @NotNull AiApi aiApi) {
+        @Valid @NotNull Filtering filtering,
+        @Valid @NotNull Summarization summarization,
+        @Valid @NotNull AiApi aiApi) {
 
     public record Filtering(
-        @NotNull List<String> stopWords,
-        @NotNull List<String> excludedAuthors,
-        @Positive int minLength) {}
+            @NotNull List<String> stopWords,
+            @NotNull List<String> excludedAuthors,
+            @Positive int minLength) {}
 
     public record Summarization(
-        @Positive int threshold,
-        @NotBlank String mode) {}
+            @Positive int threshold, @NotBlank String mode) {}
 
-    public record AiApi(
-        @NotBlank String url,
-        @NotNull String token) {}
+    public record AiApi(@NotBlank String url, @NotNull String token) {}
 }

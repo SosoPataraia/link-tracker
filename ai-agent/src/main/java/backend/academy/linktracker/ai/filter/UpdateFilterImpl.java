@@ -13,7 +13,8 @@ public class UpdateFilterImpl implements UpdateFilter {
 
     @Override
     public FilterResult apply(RawUpdateEvent event) {
-        String description = event.getDescription() != null ? event.getDescription().toString() : "";
+        String description =
+                event.getDescription() != null ? event.getDescription().toString() : "";
         String author = event.getAuthor() != null ? event.getAuthor().toString() : "";
 
         FilterResult stopWordResult = checkStopWords(description);
@@ -32,24 +33,22 @@ public class UpdateFilterImpl implements UpdateFilter {
     private FilterResult checkStopWords(String description) {
         String lower = description.toLowerCase();
         return properties.filtering().stopWords().stream()
-            .filter(word -> lower.contains(word.toLowerCase()))
-            .findFirst()
-            .map(word -> FilterResult.reject("stop-word: " + word))
-            .orElse(FilterResult.pass());
+                .filter(word -> lower.contains(word.toLowerCase()))
+                .findFirst()
+                .map(word -> FilterResult.reject("stop-word: " + word))
+                .orElse(FilterResult.pass());
     }
 
     private FilterResult checkExcludedAuthor(String author) {
         boolean isExcluded = properties.filtering().excludedAuthors().stream()
-            .anyMatch(excludedAuthor -> excludedAuthor.equalsIgnoreCase(author));
-        return isExcluded
-            ? FilterResult.reject("excluded-author: " + author)
-            : FilterResult.pass();
+                .anyMatch(excludedAuthor -> excludedAuthor.equalsIgnoreCase(author));
+        return isExcluded ? FilterResult.reject("excluded-author: " + author) : FilterResult.pass();
     }
 
     private FilterResult checkMinLength(String description) {
         int minLength = properties.filtering().minLength();
         return description.length() < minLength
-            ? FilterResult.reject("min-length: " + description.length() + " < " + minLength)
-            : FilterResult.pass();
+                ? FilterResult.reject("min-length: " + description.length() + " < " + minLength)
+                : FilterResult.pass();
     }
 }

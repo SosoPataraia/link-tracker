@@ -22,20 +22,19 @@ public class HuggingFaceSummarizationClient implements SummarizationClient {
     public String summarize(String text) {
         String token = properties.aiApi().token();
         if (token == null || token.isBlank()) {
-            log.atWarn()
-                .addKeyValue("reason", "no-token")
-                .log("summarizer.ai.skipped");
+            log.atWarn().addKeyValue("reason", "no-token").log("summarizer.ai.skipped");
             return text;
         }
 
         try {
             var request = Map.of("inputs", text);
-            var response = restClient.post()
-                .uri(properties.aiApi().url())
-                .header("Authorization", "Bearer " + token)
-                .body(request)
-                .retrieve()
-                .body(List.class);
+            var response = restClient
+                    .post()
+                    .uri(properties.aiApi().url())
+                    .header("Authorization", "Bearer " + token)
+                    .body(request)
+                    .retrieve()
+                    .body(List.class);
 
             if (response != null && !response.isEmpty()) {
                 var first = response.getFirst();
@@ -44,9 +43,7 @@ public class HuggingFaceSummarizationClient implements SummarizationClient {
                 }
             }
         } catch (Exception e) {
-            log.atWarn()
-                .addKeyValue("reason", e.getMessage())
-                .log("summarizer.ai.failed.fallback-to-original");
+            log.atWarn().addKeyValue("reason", e.getMessage()).log("summarizer.ai.failed.fallback-to-original");
         }
         return text;
     }

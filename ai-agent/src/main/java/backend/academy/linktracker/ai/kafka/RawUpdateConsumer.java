@@ -15,14 +15,14 @@ public class RawUpdateConsumer {
     private final UpdateProcessor updateProcessor;
 
     @KafkaListener(
-        topics = "${app.kafka.topic.raw-updates:link.raw-updates}",
-        groupId = "${spring.kafka.consumer.group-id:ai-agent-group}",
-        containerFactory = "kafkaListenerContainerFactory")
+            topics = "${app.kafka.topic.raw-updates:link.raw-updates}",
+            groupId = "${spring.kafka.consumer.group-id:ai-agent-group}",
+            containerFactory = "kafkaListenerContainerFactory")
     public void consume(RawUpdateEvent event) {
         log.atInfo()
-            .addKeyValue("id", event.getId())
-            .addKeyValue("author", event.getAuthor())
-            .log("consumer.received");
+                .addKeyValue("id", event.getId())
+                .addKeyValue("author", event.getAuthor())
+                .log("consumer.received");
         updateProcessor.process(event);
     }
 }

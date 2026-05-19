@@ -24,11 +24,11 @@ public class UpdateProcessorImpl implements UpdateProcessor {
     private final KafkaTopicProperties kafkaTopicProperties;
 
     public UpdateProcessorImpl(
-        UpdateFilter updateFilter,
-        Summarizer summarizer,
-        @Qualifier("processedKafkaTemplate") KafkaTemplate<String, ProcessedUpdateEvent> kafkaTemplate,
-        AiAgentProperties properties,
-        KafkaTopicProperties kafkaTopicProperties) {
+            UpdateFilter updateFilter,
+            Summarizer summarizer,
+            @Qualifier("processedKafkaTemplate") KafkaTemplate<String, ProcessedUpdateEvent> kafkaTemplate,
+            AiAgentProperties properties,
+            KafkaTopicProperties kafkaTopicProperties) {
         this.updateFilter = updateFilter;
         this.summarizer = summarizer;
         this.kafkaTemplate = kafkaTemplate;
@@ -41,31 +41,30 @@ public class UpdateProcessorImpl implements UpdateProcessor {
         FilterResult result = updateFilter.apply(event);
         if (!result.passed()) {
             log.atInfo()
-                .addKeyValue("id", event.getId())
-                .addKeyValue("reason", result.reason())
-                .log("processor.filtered");
+                    .addKeyValue("id", event.getId())
+                    .addKeyValue("reason", result.reason())
+                    .log("processor.filtered");
             return;
         }
 
-        String description = event.getDescription() != null
-            ? event.getDescription().toString()
-            : "";
+        String description =
+                event.getDescription() != null ? event.getDescription().toString() : "";
 
         if (description.length() > properties.summarization().threshold()) {
             description = summarizer.summarize(description);
         }
 
         var processed = ProcessedUpdateEvent.newBuilder()
-            .setId(event.getId())
-            .setDescription(description)
-            .setTgChatIds(event.getTgChatIds())
-            .setPriority(Priority.NORMAL)
-            .build();
+                .setId(event.getId())
+                .setDescription(description)
+                .setTgChatIds(event.getTgChatIds())
+                .setPriority(Priority.NORMAL)
+                .build();
 
         kafkaTemplate.send(kafkaTopicProperties.processedUpdates(), String.valueOf(event.getId()), processed);
         log.atInfo()
-            .addKeyValue("id", event.getId())
-            .addKeyValue("topic", kafkaTopicProperties.processedUpdates())
-            .log("processor.published");
+                .addKeyValue("id", event.getId())
+                .addKeyValue("topic", kafkaTopicProperties.processedUpdates())
+                .log("processor.published");
     }
 }

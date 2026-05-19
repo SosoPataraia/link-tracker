@@ -18,9 +18,9 @@ public class AiApiSummarizer implements Summarizer {
     @Override
     public String summarize(String text) {
         log.atInfo()
-            .addKeyValue("originalLength", text.length())
-            .addKeyValue("threshold", properties.summarization().threshold())
-            .log("summarizer.ai.invoking");
+                .addKeyValue("originalLength", text.length())
+                .addKeyValue("threshold", properties.summarization().threshold())
+                .log("summarizer.ai.invoking");
         return summarizationClient.summarize(text);
     }
 }
