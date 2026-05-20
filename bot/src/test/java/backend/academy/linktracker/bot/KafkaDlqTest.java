@@ -7,7 +7,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import backend.academy.linktracker.avro.LinkUpdateEvent;
+import backend.academy.linktracker.avro.Priority;
+import backend.academy.linktracker.avro.ProcessedUpdateEvent;
 import backend.academy.linktracker.bot.handler.UpdateNotificationHandler;
 import com.pengrad.telegrambot.TelegramBot;
 import java.time.Duration;
@@ -32,7 +33,7 @@ import org.wiremock.spring.EnableWireMock;
 class KafkaDlqTest {
 
     @Autowired
-    KafkaTemplate<String, LinkUpdateEvent> avroTestKafkaTemplate;
+    KafkaTemplate<String, ProcessedUpdateEvent> avroTestKafkaTemplate;
 
     @Autowired
     KafkaTemplate<String, String> testStringKafkaTemplate;
@@ -49,14 +50,14 @@ class KafkaDlqTest {
                 .when(notificationHandler)
                 .handleUpdate(any());
 
-        var event = LinkUpdateEvent.newBuilder()
+        var event = ProcessedUpdateEvent.newBuilder()
                 .setId(1L)
-                .setUrl("https://github.com/user/repo")
                 .setDescription("Test")
                 .setTgChatIds(List.of(100L))
+                .setPriority(Priority.NORMAL)
                 .build();
 
-        avroTestKafkaTemplate.send("link-updates", event);
+        avroTestKafkaTemplate.send("link.processed-updates", event);
 
         await().atMost(Duration.ofSeconds(60))
                 .untilAsserted(() -> verify(notificationHandler, times(3)).handleUpdate(any()));
@@ -64,7 +65,7 @@ class KafkaDlqTest {
 
     @Test
     void invalidMessage_doesNotCallHandler() throws Exception {
-        testStringKafkaTemplate.send("link-updates", "this is not valid avro {{{");
+        testStringKafkaTemplate.send("link.processed-updates", "this is not valid avro {{{");
 
         await().atMost(Duration.ofSeconds(15))
                 .during(Duration.ofSeconds(5))
