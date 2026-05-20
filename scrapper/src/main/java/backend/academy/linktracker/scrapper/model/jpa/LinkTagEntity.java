@@ -28,8 +28,9 @@ public class LinkTagEntity {
     @JoinColumn(name = "link_id", nullable = false)
     private LinkEntity link;
 
-    @Column(name = "chat_id", nullable = false)
-    private Long chatId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "chat_id", nullable = false)
+    private ChatEntity chat;
 
     @Column(nullable = false)
     private String tag;

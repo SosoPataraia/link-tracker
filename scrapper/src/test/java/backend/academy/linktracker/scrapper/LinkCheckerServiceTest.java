@@ -12,36 +12,48 @@ import backend.academy.linktracker.scrapper.client.GitHubClient;
 import backend.academy.linktracker.scrapper.client.StackOverflowClient;
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;
 import backend.academy.linktracker.scrapper.model.TrackedLink;
-import backend.academy.linktracker.scrapper.repository.InMemoryLinkRepository;
+import backend.academy.linktracker.scrapper.repository.BaseRepositoryTest;
+import backend.academy.linktracker.scrapper.repository.ChatRepository;
+import backend.academy.linktracker.scrapper.repository.LinkRepository;
 import backend.academy.linktracker.scrapper.service.LinkCheckerService;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 
-@ExtendWith(MockitoExtension.class)
-class LinkCheckerServiceTest {
+class LinkCheckerServiceTest extends BaseRepositoryTest {
 
-    @Mock
-    GitHubClient gitHubClient;
+    @Autowired
+    LinkRepository linkRepository;
 
-    @Mock
-    StackOverflowClient stackOverflowClient;
+    @Autowired
+    ChatRepository chatRepository;
 
-    @Mock
     BotClient botClient;
-
-    InMemoryLinkRepository linkRepository;
+    GitHubClient gitHubClient;
+    StackOverflowClient stackOverflowClient;
     LinkCheckerService service;
 
     @BeforeEach
-    void setUp() {
-        linkRepository = new InMemoryLinkRepository();
+    void setUpService() {
+        botClient = Mockito.mock(BotClient.class);
+        gitHubClient = Mockito.mock(GitHubClient.class);
+        stackOverflowClient = Mockito.mock(StackOverflowClient.class);
         service = new LinkCheckerService(linkRepository, gitHubClient, stackOverflowClient, botClient);
+    }
+
+    private TrackedLink saveLink(long chatId, String url, Instant lastUpdated) {
+        chatRepository.register(chatId);
+        var link = new TrackedLink();
+        link.setChatId(chatId);
+        link.setUrl(url);
+        link.setTags(List.of());
+        link.setLastChecked(Instant.now());
+        link.setLastUpdated(lastUpdated);
+        return linkRepository.save(link);
     }
 
     @Test
@@ -49,8 +61,7 @@ class LinkCheckerServiceTest {
         var oldTime = Instant.parse("2024-01-01T00:00:00Z");
         var newTime = Instant.parse("2024-01-15T00:00:00Z");
 
-        var link = new TrackedLink(null, 100L, "https://github.com/user/repo", List.of(), Instant.now(), oldTime);
-        linkRepository.save(link);
+        saveLink(100L, "https://github.com/user/repo", oldTime);
 
         when(gitHubClient.getLastUpdated("user", "repo")).thenReturn(newTime);
 
@@ -65,8 +76,7 @@ class LinkCheckerServiceTest {
     @Test
     void doesNotNotifyWhenNoUpdate() {
         var time = Instant.parse("2024-01-01T00:00:00Z");
-        var link = new TrackedLink(null, 100L, "https://github.com/user/repo", List.of(), Instant.now(), time);
-        linkRepository.save(link);
+        saveLink(100L, "https://github.com/user/repo", time);
 
         when(gitHubClient.getLastUpdated("user", "repo")).thenReturn(time);
 
@@ -80,11 +90,8 @@ class LinkCheckerServiceTest {
         var oldTime = Instant.parse("2024-01-01T00:00:00Z");
         var newTime = Instant.parse("2024-01-15T00:00:00Z");
 
-        // User 100 tracks the repo, user 200 does not
-        linkRepository.save(
-                new TrackedLink(null, 100L, "https://github.com/user/repo", List.of(), Instant.now(), oldTime));
-        linkRepository.save(
-                new TrackedLink(null, 999L, "https://github.com/other/other", List.of(), Instant.now(), oldTime));
+        saveLink(100L, "https://github.com/user/repo", oldTime);
+        saveLink(999L, "https://github.com/other/other", oldTime);
 
         when(gitHubClient.getLastUpdated("user", "repo")).thenReturn(newTime);
         when(gitHubClient.getLastUpdated("other", "other")).thenReturn(oldTime);
@@ -102,13 +109,7 @@ class LinkCheckerServiceTest {
         var oldTime = Instant.parse("2024-01-01T00:00:00Z");
         var newTime = Instant.parse("2024-01-15T00:00:00Z");
 
-        linkRepository.save(new TrackedLink(
-                null,
-                100L,
-                "https://stackoverflow.com/questions/12345/how-to-test",
-                List.of(),
-                Instant.now(),
-                oldTime));
+        saveLink(100L, "https://stackoverflow.com/questions/12345/how-to-test", oldTime);
 
         when(stackOverflowClient.getLastActivity(12345L)).thenReturn(newTime);
 
@@ -119,17 +120,10 @@ class LinkCheckerServiceTest {
 
     @Test
     void handlesApiErrorGracefully() {
-        linkRepository.save(new TrackedLink(
-                null,
-                100L,
-                "https://github.com/user/repo",
-                List.of(),
-                Instant.now(),
-                Instant.parse("2024-01-01T00:00:00Z")));
+        saveLink(100L, "https://github.com/user/repo", Instant.parse("2024-01-01T00:00:00Z"));
 
         when(gitHubClient.getLastUpdated(anyString(), anyString())).thenReturn(null);
 
-        // Should not throw
         service.checkAllLinks();
         verify(botClient, never()).sendUpdate(any());
     }

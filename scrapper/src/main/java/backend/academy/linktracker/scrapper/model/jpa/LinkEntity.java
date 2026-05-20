@@ -1,10 +1,14 @@
 package backend.academy.linktracker.scrapper.model.jpa;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
@@ -38,12 +42,12 @@ public class LinkEntity {
     private Instant lastUpdated;
 
     @ManyToMany
-    @jakarta.persistence.JoinTable(
+    @JoinTable(
             name = "link_chat",
-            joinColumns = @jakarta.persistence.JoinColumn(name = "link_id"),
-            inverseJoinColumns = @jakarta.persistence.JoinColumn(name = "chat_id"))
+            joinColumns = @JoinColumn(name = "link_id"),
+            inverseJoinColumns = @JoinColumn(name = "chat_id"))
     private Set<ChatEntity> chats = new HashSet<>();
 
-    @OneToMany(mappedBy = "link", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "link", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<LinkTagEntity> tags = new ArrayList<>();
 }

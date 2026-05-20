@@ -15,6 +15,8 @@ public interface LinkRepository {
 
     List<TrackedLink> findAllByChat(long chatId);
 
+    List<TrackedLink> findAllByChat(long chatId, int limit, int offset);
+
     Collection<TrackedLink> findAll();
 
     boolean remove(long chatId, String url);

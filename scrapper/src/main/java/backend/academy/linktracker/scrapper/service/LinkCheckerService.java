@@ -7,9 +7,12 @@ import backend.academy.linktracker.scrapper.dto.LinkUpdate;
 import backend.academy.linktracker.scrapper.model.TrackedLink;
 import backend.academy.linktracker.scrapper.repository.LinkRepository;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,30 +27,34 @@ public class LinkCheckerService {
             Pattern.compile("https?://stackoverflow\\.com/questions/(\\d+).*");
 
     private final LinkRepository linkRepository;
-    private final GitHubClient gitHubClient; // now an interface
-    private final StackOverflowClient stackOverflowClient; // now an interface
-    private final BotClient botClient; // now an interface
+    private final GitHubClient gitHubClient;
+    private final StackOverflowClient stackOverflowClient;
+    private final BotClient botClient;
 
     public void checkAllLinks() {
-        var allLinks = linkRepository.findAll();
+        Collection<TrackedLink> allLinks = linkRepository.findAll();
         log.info("Checking {} links for updates", allLinks.size());
 
-        var linksByUrl = allLinks.stream().collect(java.util.stream.Collectors.groupingBy(TrackedLink::getUrl));
+        Map<String, List<TrackedLink>> linksByUrl =
+                allLinks.stream().collect(Collectors.groupingBy(TrackedLink::getUrl));
 
         linksByUrl.forEach((url, links) -> {
             try {
                 Instant lastUpdated = fetchLastUpdated(url);
                 if (lastUpdated == null) return;
 
-                for (TrackedLink link : links) {
-                    if (link.getLastUpdated() != null && lastUpdated.isAfter(link.getLastUpdated())) {
-                        notifyUpdate(link, links);
-                        break;
-                    } else if (link.getLastUpdated() == null) {
-                        link.setLastUpdated(lastUpdated);
-                    }
+                boolean hasUpdate = links.stream()
+                        .anyMatch(l -> l.getLastUpdated() != null && lastUpdated.isAfter(l.getLastUpdated()));
+
+                if (hasUpdate) {
+                    notifyUpdate(links.getFirst(), links);
                 }
-                links.forEach(l -> l.setLastUpdated(lastUpdated));
+
+                links.forEach(l -> {
+                    l.setLastUpdated(lastUpdated);
+                    linkRepository.save(l);
+                });
+
             } catch (Exception e) {
                 log.error("Error checking url={}: {}", url, e.getMessage());
             }
@@ -58,7 +65,10 @@ public class LinkCheckerService {
         List<Long> chatIds =
                 allLinksForUrl.stream().map(TrackedLink::getChatId).distinct().toList();
         var update = new LinkUpdate(link.getId(), link.getUrl(), "Обнаружены изменения по ссылке", chatIds);
-        log.info("Sending update for url={} to {} chats", link.getUrl(), chatIds.size());
+        log.atInfo()
+                .addKeyValue("url", link.getUrl())
+                .addKeyValue("chatCount", chatIds.size())
+                .log("link.update.sent");
         botClient.sendUpdate(update);
     }
 

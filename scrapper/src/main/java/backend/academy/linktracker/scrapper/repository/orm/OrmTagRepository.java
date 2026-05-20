@@ -1,5 +1,7 @@
 package backend.academy.linktracker.scrapper.repository.orm;
 
+import backend.academy.linktracker.scrapper.model.jpa.ChatEntity;
+import backend.academy.linktracker.scrapper.model.jpa.LinkEntity;
 import backend.academy.linktracker.scrapper.model.jpa.LinkTagEntity;
 import backend.academy.linktracker.scrapper.repository.TagRepository;
 import jakarta.persistence.EntityManager;
@@ -16,9 +18,8 @@ public class OrmTagRepository implements TagRepository {
     @Transactional
     public void addTag(long linkId, long chatId, String tag) {
         var entity = new LinkTagEntity();
-        entity.setLink(
-                entityManager.getReference(backend.academy.linktracker.scrapper.model.jpa.LinkEntity.class, linkId));
-        entity.setChatId(chatId);
+        entity.setLink(entityManager.getReference(LinkEntity.class, linkId));
+        entity.setChat(entityManager.getReference(ChatEntity.class, chatId));
         entity.setTag(tag);
         entityManager.persist(entity);
     }
@@ -29,7 +30,7 @@ public class OrmTagRepository implements TagRepository {
         entityManager
                 .createQuery("""
                 DELETE FROM LinkTagEntity t
-                WHERE t.link.id = :linkId AND t.chatId = :chatId AND t.tag = :tag
+                WHERE t.link.id = :linkId AND t.chat.id = :chatId AND t.tag = :tag
                 """)
                 .setParameter("linkId", linkId)
                 .setParameter("chatId", chatId)
@@ -43,7 +44,7 @@ public class OrmTagRepository implements TagRepository {
         entityManager
                 .createQuery("""
                 DELETE FROM LinkTagEntity t
-                WHERE t.link.id = :linkId AND t.chatId = :chatId
+                WHERE t.link.id = :linkId AND t.chat.id = :chatId
                 """)
                 .setParameter("linkId", linkId)
                 .setParameter("chatId", chatId)
@@ -55,7 +56,7 @@ public class OrmTagRepository implements TagRepository {
         return entityManager
                 .createQuery("""
                 SELECT t.tag FROM LinkTagEntity t
-                WHERE t.link.id = :linkId AND t.chatId = :chatId
+                WHERE t.link.id = :linkId AND t.chat.id = :chatId
                 """, String.class)
                 .setParameter("linkId", linkId)
                 .setParameter("chatId", chatId)
@@ -67,7 +68,7 @@ public class OrmTagRepository implements TagRepository {
         return entityManager
                 .createQuery("""
                 SELECT t.link.id FROM LinkTagEntity t
-                WHERE t.chatId = :chatId AND t.tag = :tag
+                WHERE t.chat.id = :chatId AND t.tag = :tag
                 """, Long.class)
                 .setParameter("chatId", chatId)
                 .setParameter("tag", tag)

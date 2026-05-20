@@ -5,13 +5,12 @@ spring:
   application:
     name: scrapper
   datasource:
-    url: jdbc:postgresql://localhost:5432/scrapper
-    username: postgres
-    password: postgres
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/scrapper}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
   liquibase:
-    enabled: true
-    change-log: classpath:db/changelog/master.xml
+    enabled: false
   jpa:
     hibernate:
       ddl-auto: validate

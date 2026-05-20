@@ -36,7 +36,7 @@ public class OrmLinkRepository implements LinkRepository {
             for (String tag : link.getTags()) {
                 var tagEntity = new LinkTagEntity();
                 tagEntity.setLink(entity);
-                tagEntity.setChatId(link.getChatId());
+                tagEntity.setChat(chat);
                 tagEntity.setTag(tag);
                 entity.getTags().add(tagEntity);
             }
@@ -65,6 +65,15 @@ public class OrmLinkRepository implements LinkRepository {
     }
 
     @Override
+    public List<TrackedLink> findAllByChat(long chatId, int limit, int offset) {
+        return linkJpaRepository.findAllByChatsId(chatId).stream()
+                .skip(offset)
+                .limit(limit)
+                .map(e -> toModel(e, chatId))
+                .toList();
+    }
+
+    @Override
     public Collection<TrackedLink> findAll() {
         return linkJpaRepository.findAll().stream()
                 .flatMap(e -> e.getChats().stream().map(chat -> toModel(e, chat.getId())))
@@ -80,8 +89,7 @@ public class OrmLinkRepository implements LinkRepository {
         LinkEntity entity = optLink.orElseThrow();
         ChatEntity chat = chatJpaRepository.getReferenceById(chatId);
 
-        entity.getTags().removeIf(t -> t.getChatId().equals(chatId));
-
+        entity.getTags().removeIf(t -> t.getChat().getId().equals(chatId));
         entity.getChats().remove(chat);
 
         if (entity.getChats().isEmpty()) {
@@ -99,7 +107,7 @@ public class OrmLinkRepository implements LinkRepository {
         ChatEntity chat = chatJpaRepository.getReferenceById(chatId);
 
         for (LinkEntity entity : links) {
-            entity.getTags().removeIf(t -> t.getChatId().equals(chatId));
+            entity.getTags().removeIf(t -> t.getChat().getId().equals(chatId));
             entity.getChats().remove(chat);
             if (entity.getChats().isEmpty()) {
                 linkJpaRepository.delete(entity);
@@ -117,7 +125,7 @@ public class OrmLinkRepository implements LinkRepository {
         link.setLastChecked(entity.getLastChecked());
         link.setLastUpdated(entity.getLastUpdated());
         link.setTags(entity.getTags().stream()
-                .filter(t -> t.getChatId().equals(chatId))
+                .filter(t -> t.getChat().getId().equals(chatId))
                 .map(LinkTagEntity::getTag)
                 .toList());
         return link;
@@ -127,6 +135,6 @@ public class OrmLinkRepository implements LinkRepository {
         return entity.getChats().stream()
                 .mapToLong(ChatEntity::getId)
                 .findFirst()
-                .orElse(0L);
+                .orElseThrow(() -> new IllegalStateException("Link has no subscribers: id=" + entity.getId()));
     }
 }
