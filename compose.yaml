@@ -8,14 +8,23 @@ services:
       POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d scrapper"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   liquibase-migrations:
     container_name: migrations
     image: liquibase/liquibase:4.29
     depends_on:
-      - postgresql
+      postgresql:
+        condition: service_healthy
     command:
       - --searchPath=/changesets
       - --changelog-file=master.xml
@@ -28,6 +37,9 @@ services:
       - ./migrations:/changesets
     networks:
       - backend
+
+volumes:
+  postgres_data:
 
 networks:
   backend:

@@ -1,5 +1,5 @@
--- initial schema placeholder
--- liquibase formatted SQL
+-- liquibase formatted sql
+-- changeset scrapper:1
 
 CREATE TABLE chats
 (
@@ -31,7 +31,8 @@ CREATE TABLE link_tags
     id      BIGSERIAL PRIMARY KEY,
     link_id BIGINT NOT NULL REFERENCES links (id) ON DELETE CASCADE,
     chat_id BIGINT NOT NULL REFERENCES chats (id) ON DELETE CASCADE,
-    tag     TEXT   NOT NULL
+    tag     TEXT   NOT NULL,
+    UNIQUE (link_id, chat_id, tag)
 );
 
 CREATE INDEX idx_link_tags_link_chat ON link_tags (link_id, chat_id);
