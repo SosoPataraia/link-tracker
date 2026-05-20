@@ -1,9 +1,8 @@
 package backend.academy.linktracker.bot.command;
 
 import backend.academy.linktracker.bot.dto.BotUpdate;
+import backend.academy.linktracker.bot.handler.TelegramBotAdapter;
 import backend.academy.linktracker.bot.repository.SessionRepository;
-import com.pengrad.telegrambot.TelegramBot;
-import com.pengrad.telegrambot.request.SendMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -11,7 +10,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class CancelCommand implements BotCommand {
 
-    private final TelegramBot telegramBot;
+    private final TelegramBotAdapter telegramBotAdapter;
     private final SessionRepository sessionRepository;
 
     @Override
@@ -27,6 +26,6 @@ public class CancelCommand implements BotCommand {
     @Override
     public void handle(BotUpdate update) {
         sessionRepository.getOrCreate(update.getChatId()).reset();
-        telegramBot.execute(new SendMessage(update.getChatId(), "Операция отменена."));
+        telegramBotAdapter.sendMessage(update.getChatId(), "Операция отменена.");
     }
 }

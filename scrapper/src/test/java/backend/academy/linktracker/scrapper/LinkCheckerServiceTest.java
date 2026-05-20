@@ -18,6 +18,7 @@ import backend.academy.linktracker.scrapper.dto.stackoverflow.CommentItem;
 import backend.academy.linktracker.scrapper.model.TrackedLink;
 import backend.academy.linktracker.scrapper.repository.InMemoryLinkRepository;
 import backend.academy.linktracker.scrapper.service.LinkCheckerService;
+import backend.academy.linktracker.scrapper.service.LinkCheckerServiceImpl;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -46,7 +47,7 @@ class LinkCheckerServiceTest {
     @BeforeEach
     void setUp() {
         linkRepository = new InMemoryLinkRepository();
-        service = new LinkCheckerService(linkRepository, gitHubClient, stackOverflowClient, botClient);
+        service = new LinkCheckerServiceImpl(linkRepository, gitHubClient, stackOverflowClient, botClient);
     }
 
     @Test

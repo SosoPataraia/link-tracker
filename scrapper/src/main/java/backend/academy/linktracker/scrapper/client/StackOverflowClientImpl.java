@@ -39,7 +39,7 @@ public class StackOverflowClientImpl implements StackOverflowClient {
             }
             return null;
         } catch (RestClientException e) {
-            log.error("StackOverflow API error for questionId={}: {}", questionId, e.getMessage());
+            log.atError().addKeyValue("questionId", questionId).log("stackoverflow.activity.fetch.failed", e);
             return null;
         }
     }
@@ -59,7 +59,7 @@ public class StackOverflowClientImpl implements StackOverflowClient {
             }
             return Optional.empty();
         } catch (RestClientException e) {
-            log.error("StackOverflow question fetch error for questionId={}: {}", questionId, e.getMessage());
+            log.atError().addKeyValue("questionId", questionId).log("stackoverflow.question.fetch.failed", e);
             return Optional.empty();
         }
     }
@@ -84,7 +84,7 @@ public class StackOverflowClientImpl implements StackOverflowClient {
             if (response == null || response.getItems() == null) return List.of();
             return response.getItems();
         } catch (RestClientException e) {
-            log.error("StackOverflow answers error for questionId={}: {}", questionId, e.getMessage());
+            log.atError().addKeyValue("questionId", questionId).log("stackoverflow.answers.fetch.failed", e);
             return List.of();
         }
     }
@@ -109,7 +109,7 @@ public class StackOverflowClientImpl implements StackOverflowClient {
             if (response == null || response.getItems() == null) return List.of();
             return response.getItems();
         } catch (RestClientException e) {
-            log.error("StackOverflow comments error for questionId={}: {}", questionId, e.getMessage());
+            log.atError().addKeyValue("questionId", questionId).log("stackoverflow.comments.fetch.failed", e);
             return List.of();
         }
     }

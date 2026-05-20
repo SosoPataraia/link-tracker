@@ -24,7 +24,7 @@ public class ScrapperClientImpl implements ScrapperClient {
         try {
             scrapperRestClient.post().uri("/tg-chat/{id}", chatId).retrieve().toBodilessEntity();
         } catch (RestClientException e) {
-            log.error("Failed to register chat chatId={}: {}", chatId, e.getMessage());
+            log.atError().addKeyValue("chatId", chatId).log("scrapper.chat.register.failed", e);
         }
     }
 
@@ -33,7 +33,7 @@ public class ScrapperClientImpl implements ScrapperClient {
         try {
             scrapperRestClient.delete().uri("/tg-chat/{id}", chatId).retrieve().toBodilessEntity();
         } catch (RestClientException e) {
-            log.error("Failed to delete chat chatId={}: {}", chatId, e.getMessage());
+            log.atError().addKeyValue("chatId", chatId).log("scrapper.chat.delete.failed", e);
         }
     }
 
@@ -50,7 +50,7 @@ public class ScrapperClientImpl implements ScrapperClient {
                     .retrieve()
                     .body(LinkResponse.class);
         } catch (RestClientException e) {
-            log.error("Failed to add link url={} chatId={}: {}", url, chatId, e.getMessage());
+            log.atError().addKeyValue("url", url).addKeyValue("chatId", chatId).log("scrapper.link.add.failed", e);
             return null;
         }
     }
@@ -68,7 +68,7 @@ public class ScrapperClientImpl implements ScrapperClient {
                     .retrieve()
                     .toBodilessEntity();
         } catch (RestClientException e) {
-            log.error("Failed to remove link url={} chatId={}: {}", url, chatId, e.getMessage());
+            log.atError().addKeyValue("url", url).addKeyValue("chatId", chatId).log("scrapper.link.remove.failed", e);
         }
     }
 
@@ -82,7 +82,7 @@ public class ScrapperClientImpl implements ScrapperClient {
                     .retrieve()
                     .body(ListLinksResponse.class);
         } catch (RestClientException e) {
-            log.error("Failed to get links chatId={}: {}", chatId, e.getMessage());
+            log.atError().addKeyValue("chatId", chatId).log("scrapper.links.fetch.failed", e);
             return null;
         }
     }

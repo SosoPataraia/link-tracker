@@ -1,7 +1,6 @@
 package backend.academy.linktracker.bot;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -16,6 +15,7 @@ import backend.academy.linktracker.bot.command.ListCommand;
 import backend.academy.linktracker.bot.command.StartCommand;
 import backend.academy.linktracker.bot.command.TrackCommand;
 import backend.academy.linktracker.bot.command.UntrackCommand;
+import backend.academy.linktracker.bot.handler.TelegramBotAdapter;
 import backend.academy.linktracker.bot.handler.TelegramUpdateHandler;
 import backend.academy.linktracker.bot.repository.InMemorySessionRepository;
 import backend.academy.linktracker.bot.repository.SessionRepository;
@@ -25,8 +25,6 @@ import com.pengrad.telegrambot.model.Chat;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.User;
-import com.pengrad.telegrambot.request.SendMessage;
-import com.pengrad.telegrambot.response.SendResponse;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,10 +43,10 @@ class TelegramUpdateHandlerTest {
     TelegramBot telegramBot;
 
     @Mock
-    ScrapperClient scrapperClient;
+    TelegramBotAdapter telegramBotAdapter;
 
     @Mock
-    SendResponse sendResponse;
+    ScrapperClient scrapperClient;
 
     SessionRepository sessionRepository;
     TelegramUpdateHandler handler;
@@ -56,17 +54,17 @@ class TelegramUpdateHandlerTest {
     @BeforeEach
     void setUp() {
         sessionRepository = new InMemorySessionRepository();
-        when(telegramBot.execute(any(SendMessage.class))).thenReturn(sendResponse);
 
         List<BotCommand> commands = List.of(
-                new StartCommand(telegramBot),
-                new TrackCommand(telegramBot, sessionRepository),
-                new UntrackCommand(telegramBot, scrapperClient, sessionRepository),
-                new ListCommand(telegramBot, scrapperClient, sessionRepository),
-                new CancelCommand(telegramBot, sessionRepository),
-                new HelpCommand(telegramBot, List.of()));
+                new StartCommand(telegramBotAdapter),
+                new TrackCommand(telegramBotAdapter, sessionRepository),
+                new UntrackCommand(telegramBotAdapter, scrapperClient, sessionRepository),
+                new ListCommand(telegramBotAdapter, scrapperClient, sessionRepository),
+                new CancelCommand(telegramBotAdapter, sessionRepository),
+                new HelpCommand(telegramBotAdapter, List.of()));
 
-        handler = new TelegramUpdateHandler(telegramBot, sessionRepository, scrapperClient, commands);
+        handler =
+                new TelegramUpdateHandler(telegramBot, telegramBotAdapter, sessionRepository, scrapperClient, commands);
     }
 
     @Test
@@ -143,15 +141,15 @@ class TelegramUpdateHandlerTest {
     }
 
     @Test
-    void listCommand_callsTelegramBot() {
+    void listCommand_sendsMessage() {
         sendUpdate(100L, "/list");
-        verify(telegramBot).execute(any(SendMessage.class));
+        verify(telegramBotAdapter).sendMessage(anyLong(), anyString());
     }
 
     @Test
-    void unknownCommand_sendsNotification() {
+    void unknownCommand_sendsMessage() {
         sendUpdate(100L, "/unknowncommand");
-        verify(telegramBot).execute(any(SendMessage.class));
+        verify(telegramBotAdapter).sendMessage(anyLong(), anyString());
     }
 
     private void sendUpdate(long chatId, String text) {

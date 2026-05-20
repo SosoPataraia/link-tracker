@@ -4,6 +4,7 @@ import backend.academy.linktracker.scrapper.model.TrackedLink;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -79,9 +80,8 @@ public class InMemoryLinkRepository implements LinkRepository {
     @Override
     public List<TrackedLink> findBatch(int offset, int limit) {
         return linksById.values().stream()
-                .sorted(java.util.Comparator.comparing(
-                        TrackedLink::getLastChecked,
-                        java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder())))
+                .sorted(Comparator.comparing(
+                        TrackedLink::getLastChecked, Comparator.nullsFirst(Comparator.naturalOrder())))
                 .skip(offset)
                 .limit(limit)
                 .toList();

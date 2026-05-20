@@ -1,8 +1,7 @@
 package backend.academy.linktracker.bot.command;
 
 import backend.academy.linktracker.bot.dto.BotUpdate;
-import com.pengrad.telegrambot.TelegramBot;
-import com.pengrad.telegrambot.request.SendMessage;
+import backend.academy.linktracker.bot.handler.TelegramBotAdapter;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +11,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class HelpCommand implements BotCommand {
 
-    private final TelegramBot telegramBot;
+    private final TelegramBotAdapter telegramBotAdapter;
     private final List<BotCommand> commands;
 
     @Override
@@ -34,6 +33,6 @@ public class HelpCommand implements BotCommand {
                 + "\n\nПоддерживаемые ресурсы:\n"
                 + "• GitHub репозитории (github.com/...)\n"
                 + "• StackOverflow вопросы (stackoverflow.com/questions/...)";
-        telegramBot.execute(new SendMessage(update.getChatId(), text));
+        telegramBotAdapter.sendMessage(update.getChatId(), text);
     }
 }

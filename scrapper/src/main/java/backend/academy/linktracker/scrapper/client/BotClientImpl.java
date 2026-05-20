@@ -25,9 +25,12 @@ public class BotClientImpl implements BotClient {
                     .body(update)
                     .retrieve()
                     .toBodilessEntity();
-            log.info("Sent update to bot for url={} chatIds={}", update.getUrl(), update.getTgChatIds());
+            log.atInfo()
+                    .addKeyValue("url", update.getUrl())
+                    .addKeyValue("chatIds", update.getTgChatIds())
+                    .log("bot.update.sent");
         } catch (RestClientException e) {
-            log.error("Failed to send update to bot for url={}: {}", update.getUrl(), e.getMessage());
+            log.atError().addKeyValue("url", update.getUrl()).log("bot.update.failed", e);
         }
     }
 }

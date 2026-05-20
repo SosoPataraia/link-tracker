@@ -1,10 +1,9 @@
 package backend.academy.linktracker.bot.command;
 
 import backend.academy.linktracker.bot.dto.BotUpdate;
+import backend.academy.linktracker.bot.handler.TelegramBotAdapter;
 import backend.academy.linktracker.bot.repository.SessionRepository;
 import backend.academy.linktracker.bot.state.UserState;
-import com.pengrad.telegrambot.TelegramBot;
-import com.pengrad.telegrambot.request.SendMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -12,7 +11,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class TrackCommand implements BotCommand {
 
-    private final TelegramBot telegramBot;
+    private final TelegramBotAdapter telegramBotAdapter;
     private final SessionRepository sessionRepository;
 
     @Override
@@ -30,10 +29,10 @@ public class TrackCommand implements BotCommand {
         var session = sessionRepository.getOrCreate(update.getChatId());
         session.setState(UserState.WAITING_FOR_LINK);
         session.setPendingUrl(null);
-        telegramBot.execute(new SendMessage(
+        telegramBotAdapter.sendMessage(
                 update.getChatId(),
                 "Отправьте ссылку для отслеживания.\n"
                         + "Поддерживаются: github.com и stackoverflow.com\n\n"
-                        + "Для отмены введите /cancel"));
+                        + "Для отмены введите /cancel");
     }
 }

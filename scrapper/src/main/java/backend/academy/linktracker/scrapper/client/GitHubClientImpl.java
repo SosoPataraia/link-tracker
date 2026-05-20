@@ -28,7 +28,7 @@ public class GitHubClientImpl implements GitHubClient {
                     .body(RepoResponse.class);
             return response != null ? response.getPushedAt() : null;
         } catch (RestClientException e) {
-            log.error("GitHub API error for {}/{}: {}", owner, repo, e.getMessage());
+            log.atError().addKeyValue("owner", owner).addKeyValue("repo", repo).log("github.repo.fetch.failed", e);
             return null;
         }
     }
@@ -51,7 +51,7 @@ public class GitHubClientImpl implements GitHubClient {
             if (items == null) return List.of();
             return items.stream().filter(i -> !i.isPullRequest()).toList();
         } catch (RestClientException e) {
-            log.error("GitHub issues API error for {}/{}: {}", owner, repo, e.getMessage());
+            log.atError().addKeyValue("owner", owner).addKeyValue("repo", repo).log("github.issues.fetch.failed", e);
             return List.of();
         }
     }
@@ -75,7 +75,7 @@ public class GitHubClientImpl implements GitHubClient {
                     .filter(i -> i.getCreatedAt() != null && i.getCreatedAt().isAfter(since))
                     .toList();
         } catch (RestClientException e) {
-            log.error("GitHub pulls API error for {}/{}: {}", owner, repo, e.getMessage());
+            log.atError().addKeyValue("owner", owner).addKeyValue("repo", repo).log("github.pulls.fetch.failed", e);
             return List.of();
         }
     }
