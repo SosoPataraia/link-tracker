@@ -1,8 +1,7 @@
 package backend.academy.linktracker.bot.command;
 
 import backend.academy.linktracker.bot.dto.BotUpdate;
-import com.pengrad.telegrambot.TelegramBot;
-import com.pengrad.telegrambot.request.SendMessage;
+import backend.academy.linktracker.bot.handler.TelegramBotAdapter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -10,7 +9,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class StartCommand implements BotCommand {
 
-    private final TelegramBot telegramBot;
+    private final TelegramBotAdapter botAdapter;
 
     @Override
     public String command() {
@@ -31,6 +30,6 @@ public class StartCommand implements BotCommand {
                 + "/untrack — прекратить отслеживание ссылки\n"
                 + "/list — список отслеживаемых ссылок\n"
                 + "/help — справка";
-        telegramBot.execute(new SendMessage(update.getChatId(), text));
+        botAdapter.sendMessage(update.getChatId(), text);
     }
 }

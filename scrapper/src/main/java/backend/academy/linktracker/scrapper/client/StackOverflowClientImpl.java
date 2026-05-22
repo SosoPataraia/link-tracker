@@ -48,8 +48,13 @@ public class StackOverflowClientImpl implements StackOverflowClient {
             log.atError()
                     .addKeyValue("questionId", questionId)
                     .addKeyValue("error", e.getMessage())
+<<<<<<< HEAD
                     .log("stackoverflow.getLastActivity.failed");
             throw e;
+=======
+                    .log("stackoverflow.activity.fetch.failed");
+            return null;
+>>>>>>> 8298d9d (refactor: apply structured logging, @Data DTOs, TelegramBotAdapter, Dead code cleanup, unused config)
         }
     }
 
@@ -73,8 +78,13 @@ public class StackOverflowClientImpl implements StackOverflowClient {
             log.atError()
                     .addKeyValue("questionId", questionId)
                     .addKeyValue("error", e.getMessage())
+<<<<<<< HEAD
                     .log("stackoverflow.getQuestion.failed");
             throw e;
+=======
+                    .log("stackoverflow.question.fetch.failed");
+            return Optional.empty();
+>>>>>>> 8298d9d (refactor: apply structured logging, @Data DTOs, TelegramBotAdapter, Dead code cleanup, unused config)
         }
     }
 
@@ -103,8 +113,13 @@ public class StackOverflowClientImpl implements StackOverflowClient {
             log.atError()
                     .addKeyValue("questionId", questionId)
                     .addKeyValue("error", e.getMessage())
+<<<<<<< HEAD
                     .log("stackoverflow.getNewAnswers.failed");
             throw e;
+=======
+                    .log("stackoverflow.answers.fetch.failed");
+            return List.of();
+>>>>>>> 8298d9d (refactor: apply structured logging, @Data DTOs, TelegramBotAdapter, Dead code cleanup, unused config)
         }
     }
 
@@ -133,8 +148,13 @@ public class StackOverflowClientImpl implements StackOverflowClient {
             log.atError()
                     .addKeyValue("questionId", questionId)
                     .addKeyValue("error", e.getMessage())
+<<<<<<< HEAD
                     .log("stackoverflow.getNewComments.failed");
             throw e;
+=======
+                    .log("stackoverflow.comments.fetch.failed");
+            return List.of();
+>>>>>>> 8298d9d (refactor: apply structured logging, @Data DTOs, TelegramBotAdapter, Dead code cleanup, unused config)
         }
     }
 }
