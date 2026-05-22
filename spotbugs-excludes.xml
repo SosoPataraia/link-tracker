@@ -71,4 +71,7 @@
     <Match>
         <Class name="backend.academy.linktracker.avro.LinkUpdateEvent"/>
     </Match>
+    <Match>
+        <Class name="backend.academy.linktracker.avro.ProcessedUpdateEvent"/>
+    </Match>
 </FindBugsFilter>

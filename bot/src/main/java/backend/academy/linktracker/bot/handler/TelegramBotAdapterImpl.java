@@ -18,7 +18,10 @@ public class TelegramBotAdapterImpl implements TelegramBotAdapter {
         try {
             telegramBot.execute(new SendMessage(chatId, text));
         } catch (Exception e) {
-            log.error("Failed to send message to chatId={}: {}", chatId, e.getMessage());
+            log.atError()
+                    .addKeyValue("chatId", chatId)
+                    .addKeyValue("error", e.getMessage())
+                    .log("telegram.send.failed");
         }
     }
 }

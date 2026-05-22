@@ -3,9 +3,8 @@ package backend.academy.linktracker.bot.command;
 import backend.academy.linktracker.bot.client.ScrapperClient;
 import backend.academy.linktracker.bot.dto.BotUpdate;
 import backend.academy.linktracker.bot.dto.LinkResponse;
+import backend.academy.linktracker.bot.handler.TelegramBotAdapter;
 import backend.academy.linktracker.bot.repository.SessionRepository;
-import com.pengrad.telegrambot.TelegramBot;
-import com.pengrad.telegrambot.request.SendMessage;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -14,7 +13,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ListCommand implements BotCommand {
 
-    private final TelegramBot telegramBot;
+    private final TelegramBotAdapter botAdapter;
     private final ScrapperClient scrapperClient;
     private final SessionRepository sessionRepository;
 
@@ -51,7 +50,7 @@ public class ListCommand implements BotCommand {
             String emptyMsg = filterTag != null
                     ? "Нет ссылок с тегом \"" + filterTag + "\"."
                     : "Вы не отслеживаете ни одной ссылки.\nДобавьте ссылку командой /track";
-            telegramBot.execute(new SendMessage(chatId, emptyMsg));
+            botAdapter.sendMessage(chatId, emptyMsg);
             return;
         }
 
@@ -66,6 +65,6 @@ public class ListCommand implements BotCommand {
             }
             sb.append("\n");
         }
-        telegramBot.execute(new SendMessage(chatId, sb.toString()));
+        botAdapter.sendMessage(chatId, sb.toString());
     }
 }
