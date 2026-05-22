@@ -39,7 +39,10 @@ public class StackOverflowClientImpl implements StackOverflowClient {
             }
             return null;
         } catch (RestClientException e) {
-            log.error("StackOverflow API error for questionId={}: {}", questionId, e.getMessage());
+            log.atError()
+                    .addKeyValue("questionId", questionId)
+                    .addKeyValue("error", e.getMessage())
+                    .log("stackoverflow.activity.fetch.failed");
             return null;
         }
     }
@@ -59,7 +62,10 @@ public class StackOverflowClientImpl implements StackOverflowClient {
             }
             return Optional.empty();
         } catch (RestClientException e) {
-            log.error("StackOverflow question fetch error for questionId={}: {}", questionId, e.getMessage());
+            log.atError()
+                    .addKeyValue("questionId", questionId)
+                    .addKeyValue("error", e.getMessage())
+                    .log("stackoverflow.question.fetch.failed");
             return Optional.empty();
         }
     }
@@ -84,7 +90,10 @@ public class StackOverflowClientImpl implements StackOverflowClient {
             if (response == null || response.getItems() == null) return List.of();
             return response.getItems();
         } catch (RestClientException e) {
-            log.error("StackOverflow answers error for questionId={}: {}", questionId, e.getMessage());
+            log.atError()
+                    .addKeyValue("questionId", questionId)
+                    .addKeyValue("error", e.getMessage())
+                    .log("stackoverflow.answers.fetch.failed");
             return List.of();
         }
     }
@@ -109,7 +118,10 @@ public class StackOverflowClientImpl implements StackOverflowClient {
             if (response == null || response.getItems() == null) return List.of();
             return response.getItems();
         } catch (RestClientException e) {
-            log.error("StackOverflow comments error for questionId={}: {}", questionId, e.getMessage());
+            log.atError()
+                    .addKeyValue("questionId", questionId)
+                    .addKeyValue("error", e.getMessage())
+                    .log("stackoverflow.comments.fetch.failed");
             return List.of();
         }
     }

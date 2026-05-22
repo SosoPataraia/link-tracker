@@ -7,6 +7,7 @@ import backend.academy.linktracker.bot.dto.RemoveLinkRequest;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -24,7 +25,10 @@ public class ScrapperClientImpl implements ScrapperClient {
         try {
             scrapperRestClient.post().uri("/tg-chat/{id}", chatId).retrieve().toBodilessEntity();
         } catch (RestClientException e) {
-            log.error("Failed to register chat chatId={}: {}", chatId, e.getMessage());
+            log.atError()
+                    .addKeyValue("chatId", chatId)
+                    .addKeyValue("error", e.getMessage())
+                    .log("scrapper.chat.register.failed");
         }
     }
 
@@ -33,7 +37,10 @@ public class ScrapperClientImpl implements ScrapperClient {
         try {
             scrapperRestClient.delete().uri("/tg-chat/{id}", chatId).retrieve().toBodilessEntity();
         } catch (RestClientException e) {
-            log.error("Failed to delete chat chatId={}: {}", chatId, e.getMessage());
+            log.atError()
+                    .addKeyValue("chatId", chatId)
+                    .addKeyValue("error", e.getMessage())
+                    .log("scrapper.chat.delete.failed");
         }
     }
 
@@ -50,7 +57,11 @@ public class ScrapperClientImpl implements ScrapperClient {
                     .retrieve()
                     .body(LinkResponse.class);
         } catch (RestClientException e) {
-            log.error("Failed to add link url={} chatId={}: {}", url, chatId, e.getMessage());
+            log.atError()
+                    .addKeyValue("url", url)
+                    .addKeyValue("chatId", chatId)
+                    .addKeyValue("error", e.getMessage())
+                    .log("scrapper.link.add.failed");
             return null;
         }
     }
@@ -60,7 +71,7 @@ public class ScrapperClientImpl implements ScrapperClient {
         try {
             var request = new RemoveLinkRequest(url);
             scrapperRestClient
-                    .method(org.springframework.http.HttpMethod.DELETE)
+                    .method(HttpMethod.DELETE)
                     .uri("/links")
                     .header("Tg-Chat-Id", String.valueOf(chatId))
                     .contentType(MediaType.APPLICATION_JSON)
@@ -68,7 +79,11 @@ public class ScrapperClientImpl implements ScrapperClient {
                     .retrieve()
                     .toBodilessEntity();
         } catch (RestClientException e) {
-            log.error("Failed to remove link url={} chatId={}: {}", url, chatId, e.getMessage());
+            log.atError()
+                    .addKeyValue("url", url)
+                    .addKeyValue("chatId", chatId)
+                    .addKeyValue("error", e.getMessage())
+                    .log("scrapper.link.remove.failed");
         }
     }
 
@@ -82,7 +97,10 @@ public class ScrapperClientImpl implements ScrapperClient {
                     .retrieve()
                     .body(ListLinksResponse.class);
         } catch (RestClientException e) {
-            log.error("Failed to get links chatId={}: {}", chatId, e.getMessage());
+            log.atError()
+                    .addKeyValue("chatId", chatId)
+                    .addKeyValue("error", e.getMessage())
+                    .log("scrapper.link.get.failed");
             return null;
         }
     }

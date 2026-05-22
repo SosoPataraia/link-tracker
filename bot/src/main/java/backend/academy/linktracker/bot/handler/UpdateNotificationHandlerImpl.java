@@ -1,8 +1,6 @@
 package backend.academy.linktracker.bot.handler;
 
 import backend.academy.linktracker.bot.dto.LinkUpdate;
-import com.pengrad.telegrambot.TelegramBot;
-import com.pengrad.telegrambot.request.SendMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -12,7 +10,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class UpdateNotificationHandlerImpl implements UpdateNotificationHandler {
 
-    private final TelegramBot telegramBot;
+    private final TelegramBotAdapter botAdapter;
 
     @Override
     public void handleUpdate(LinkUpdate update) {
@@ -22,7 +20,7 @@ public class UpdateNotificationHandlerImpl implements UpdateNotificationHandler 
                     .addKeyValue("chatId", chatId)
                     .addKeyValue("url", update.getUrl())
                     .log("update.notification.sent");
-            telegramBot.execute(new SendMessage(chatId, message));
+            botAdapter.sendMessage(chatId, message);
         }
     }
 

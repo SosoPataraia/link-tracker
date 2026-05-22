@@ -28,7 +28,11 @@ public class GitHubClientImpl implements GitHubClient {
                     .body(RepoResponse.class);
             return response != null ? response.getPushedAt() : null;
         } catch (RestClientException e) {
-            log.error("GitHub API error for {}/{}: {}", owner, repo, e.getMessage());
+            log.atError()
+                    .addKeyValue("owner", owner)
+                    .addKeyValue("repo", repo)
+                    .addKeyValue("error", e.getMessage())
+                    .log("github.repo.fetch.failed");
             return null;
         }
     }
@@ -51,7 +55,11 @@ public class GitHubClientImpl implements GitHubClient {
             if (items == null) return List.of();
             return items.stream().filter(i -> !i.isPullRequest()).toList();
         } catch (RestClientException e) {
-            log.error("GitHub issues API error for {}/{}: {}", owner, repo, e.getMessage());
+            log.atError()
+                    .addKeyValue("owner", owner)
+                    .addKeyValue("repo", repo)
+                    .addKeyValue("error", e.getMessage())
+                    .log("github.issues.fetch.failed");
             return List.of();
         }
     }
@@ -75,7 +83,11 @@ public class GitHubClientImpl implements GitHubClient {
                     .filter(i -> i.getCreatedAt() != null && i.getCreatedAt().isAfter(since))
                     .toList();
         } catch (RestClientException e) {
-            log.error("GitHub pulls API error for {}/{}: {}", owner, repo, e.getMessage());
+            log.atError()
+                    .addKeyValue("owner", owner)
+                    .addKeyValue("repo", repo)
+                    .addKeyValue("error", e.getMessage())
+                    .log("github.pulls.fetch.failed");
             return List.of();
         }
     }
