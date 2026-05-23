@@ -38,13 +38,8 @@ public class GitHubClientImpl implements GitHubClient {
                     .addKeyValue("owner", owner)
                     .addKeyValue("repo", repo)
                     .addKeyValue("error", e.getMessage())
-<<<<<<< HEAD
-                    .log("github.getLastUpdated.failed");
-            throw e;
-=======
                     .log("github.repo.fetch.failed");
-            return null;
->>>>>>> 8298d9d (refactor: apply structured logging, @Data DTOs, TelegramBotAdapter, Dead code cleanup, unused config)
+            throw e;
         }
     }
 
@@ -72,13 +67,8 @@ public class GitHubClientImpl implements GitHubClient {
                     .addKeyValue("owner", owner)
                     .addKeyValue("repo", repo)
                     .addKeyValue("error", e.getMessage())
-<<<<<<< HEAD
-                    .log("github.getNewIssues.failed");
-            throw e;
-=======
                     .log("github.issues.fetch.failed");
-            return List.of();
->>>>>>> 8298d9d (refactor: apply structured logging, @Data DTOs, TelegramBotAdapter, Dead code cleanup, unused config)
+            throw e;
         }
     }
 
@@ -107,13 +97,8 @@ public class GitHubClientImpl implements GitHubClient {
                     .addKeyValue("owner", owner)
                     .addKeyValue("repo", repo)
                     .addKeyValue("error", e.getMessage())
-<<<<<<< HEAD
-                    .log("github.getNewPullRequests.failed");
-            throw e;
-=======
                     .log("github.pulls.fetch.failed");
-            return List.of();
->>>>>>> 8298d9d (refactor: apply structured logging, @Data DTOs, TelegramBotAdapter, Dead code cleanup, unused config)
+            throw e;
         }
     }
 }
