@@ -85,12 +85,12 @@ public class KafkaConsumerConfiguration {
         int retryAttempts = kafkaProperties.getConsumer().getRetryAttempts();
 
         var recoverer = new DeadLetterPublishingRecoverer(dltKafkaTemplate, (record, ex) -> {
-            log.error(
-                    "Message sent to DLT after {} retries. topic={} key={} error={}",
-                    retryAttempts,
-                    record.topic(),
-                    record.key(),
-                    ex.getMessage());
+            log.atError()
+                    .addKeyValue("retryAttempts", retryAttempts)
+                    .addKeyValue("topic", record.topic())
+                    .addKeyValue("key", record.key())
+                    .addKeyValue("error", ex.getMessage())
+                    .log("kafka.dlt.published");
             return new org.apache.kafka.common.TopicPartition(record.topic() + ".DLT", record.partition());
         });
 

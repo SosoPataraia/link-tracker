@@ -61,7 +61,10 @@ public class LinksController {
                 Instant.now(),
                 Instant.now());
         TrackedLink saved = linkRepository.save(link);
-        log.info("Added link url={} for chatId={}", request.getLink(), chatId);
+        log.atInfo()
+                .addKeyValue("url", request.getLink())
+                .addKeyValue("chatId", chatId)
+                .log("link.added");
         return ResponseEntity.ok(new LinkResponse(saved.getId(), saved.getUrl(), saved.getTags()));
     }
 
@@ -77,7 +80,10 @@ public class LinksController {
             return ResponseEntity.status(404).build();
         }
         linkRepository.remove(chatId, request.getLink());
-        log.info("Removed link url={} for chatId={}", request.getLink(), chatId);
+        log.atInfo()
+                .addKeyValue("url", request.getLink())
+                .addKeyValue("chatId", chatId)
+                .log("link.removed");
         var removed = existing.orElseThrow();
         return ResponseEntity.ok(new LinkResponse(removed.getId(), removed.getUrl(), removed.getTags()));
     }
