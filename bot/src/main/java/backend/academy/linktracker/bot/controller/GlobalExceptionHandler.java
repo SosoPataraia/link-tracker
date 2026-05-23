@@ -14,7 +14,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
-        log.warn("Validation error: {}", ex.getMessage());
+        log.atWarn().addKeyValue("error", ex.getMessage()).log("request.validation.failed");
         return ResponseEntity.badRequest()
                 .body(new ApiErrorResponse(
                         "Invalid request body",
@@ -29,7 +29,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleError(Exception ex) {
-        log.error("Unexpected error", ex);
+        log.atError()
+                .addKeyValue("error", ex.getMessage())
+                .addKeyValue("exception", ex.getClass().getSimpleName())
+                .log("request.unexpected.error");
         return ResponseEntity.internalServerError()
                 .body(new ApiErrorResponse(
                         "Internal server error",

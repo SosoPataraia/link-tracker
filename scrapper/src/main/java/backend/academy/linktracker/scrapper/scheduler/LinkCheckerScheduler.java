@@ -76,12 +76,7 @@ public class LinkCheckerScheduler {
                 .log("scheduler.complete");
     }
 
-    /**
-     * Splits the batch into {@code threadCount} sublists, submits each to the executor,
-     * waits for all to finish, collects failed URLs.
-     */
     private List<String> processBatchParallel(List<TrackedLink> batch, int threadCount, ExecutorService executor) {
-
         List<List<TrackedLink>> sublists = partition(batch, threadCount);
         List<Future<List<String>>> futures = new ArrayList<>();
 
@@ -95,18 +90,17 @@ public class LinkCheckerScheduler {
                 failures.addAll(future.get());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                log.error("Scheduler thread interrupted", e);
+                log.atError().addKeyValue("error", e.getMessage()).log("scheduler.thread.interrupted");
             } catch (ExecutionException e) {
-                log.error("Unexpected error in scheduler thread", e.getCause());
+                log.atError()
+                        .addKeyValue(
+                                "error", e.getCause() != null ? e.getCause().getMessage() : e.getMessage())
+                        .log("scheduler.thread.execution.error");
             }
         }
         return failures;
     }
 
-    /**
-     * Processes one sublist. Each URL's failure is isolated — others continue.
-     * Returns list of URLs that failed.
-     */
     private List<String> processSublist(List<TrackedLink> links) {
         List<String> failures = new ArrayList<>();
 
@@ -116,7 +110,10 @@ public class LinkCheckerScheduler {
             try {
                 linkCheckerService.checkLinks(subscribers);
             } catch (Exception e) {
-                log.error("Failed to process url={}", url, e);
+                log.atError()
+                        .addKeyValue("url", url)
+                        .addKeyValue("error", e.getMessage())
+                        .log("scheduler.url.process.failed");
                 failures.add(url);
             }
         });
@@ -124,9 +121,6 @@ public class LinkCheckerScheduler {
         return failures;
     }
 
-    /**
-     * Splits list into at most {@code n} roughly equal sublists.
-     */
     private <T> List<List<T>> partition(List<T> list, int n) {
         List<List<T>> result = new ArrayList<>();
         int size = list.size();

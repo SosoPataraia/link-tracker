@@ -36,10 +36,6 @@ public class LinkCheckerService {
     private final StackOverflowClient stackOverflowClient;
     private final NotificationSender notificationSender;
 
-    /**
-     * Checks all links and sends updates. Called by the scheduler.
-     * Groups links by URL so each external API is called once per unique URL.
-     */
     public void checkLinks(Collection<TrackedLink> links) {
         Map<String, List<TrackedLink>> byUrl = links.stream().collect(Collectors.groupingBy(TrackedLink::getUrl));
 
@@ -47,7 +43,10 @@ public class LinkCheckerService {
             try {
                 checkUrl(url, subscribers);
             } catch (Exception e) {
-                log.error("Unhandled error checking url={}", url, e);
+                log.atError()
+                        .addKeyValue("url", url)
+                        .addKeyValue("error", e.getMessage())
+                        .log("link.check.unhandled.error");
             }
         });
     }
@@ -81,7 +80,11 @@ public class LinkCheckerService {
             for (UpdateDescription desc : updates) {
                 var linkUpdate = new LinkUpdate(representativeLinkId, url, desc.format(url), chatIds);
                 notificationSender.send(linkUpdate);
-                log.info("Sent update type={} url={} chatIds={}", desc.getType(), url, chatIds);
+                log.atInfo()
+                        .addKeyValue("type", desc.getType())
+                        .addKeyValue("url", url)
+                        .addKeyValue("chatIds", chatIds)
+                        .log("link.update.sent");
             }
         }
 

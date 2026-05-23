@@ -27,14 +27,14 @@ public class TgChatController {
     @ResponseStatus(HttpStatus.OK)
     @PostMapping("/{id}")
     public void registerChat(@PathVariable long id) {
-        log.info("Registering chat chatId={}", id);
+        log.atInfo().addKeyValue("chatId", id).log("chat.register");
         chatRepository.register(id);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiErrorResponse> deleteChat(@PathVariable long id) {
         if (!chatRepository.exists(id)) {
-            log.warn("Chat not found chatId={}", id);
+            log.atWarn().addKeyValue("chatId", id).log("chat.not.found");
             return ResponseEntity.status(404)
                     .body(new ApiErrorResponse(
                             "Chat not found",
@@ -43,7 +43,7 @@ public class TgChatController {
                             "Chat with id " + id + " not found",
                             List.of()));
         }
-        log.info("Deleting chat chatId={}", id);
+        log.atInfo().addKeyValue("chatId", id).log("chat.delete");
         linkRepository.removeAllByChat(id);
         chatRepository.remove(id);
         return ResponseEntity.ok().build();

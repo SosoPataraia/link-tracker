@@ -13,7 +13,10 @@ public class HttpNotificationSender implements NotificationSender {
 
     @Override
     public void send(LinkUpdate update) {
-        log.info("Sending update via HTTP to bot: url={}", update.getUrl());
+        log.atInfo()
+                .addKeyValue("url", update.getUrl())
+                .addKeyValue("chatIds", update.getTgChatIds())
+                .log("notification.http.send");
         botClient.sendUpdate(update);
     }
 }
