@@ -13,7 +13,9 @@ import org.springframework.validation.annotation.Validated;
 public record AiAgentProperties(
         @Valid @NotNull Filtering filtering,
         @Valid @NotNull Summarization summarization,
-        @Valid @NotNull AiApi aiApi) {
+        @Valid @NotNull AiApi aiApi,
+        @Valid @NotNull Prioritization prioritization,
+        @Valid @NotNull Grouping grouping) {
 
     public record Filtering(
             @NotNull List<String> stopWords,
@@ -24,4 +26,9 @@ public record AiAgentProperties(
             @Positive int threshold, @NotBlank String mode) {}
 
     public record AiApi(@NotBlank String url, @NotNull String token) {}
+
+    public record Prioritization(
+            @NotNull List<String> highKeywords, @NotNull List<String> lowKeywords) {}
+
+    public record Grouping(@Positive long windowMs) {}
 }
