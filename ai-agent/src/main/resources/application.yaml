@@ -35,3 +35,16 @@ ai-agent:
   ai-api:
     url: ${HUGGINGFACE_API_URL:https://api-inference.huggingface.co/models/facebook/bart-large-cnn}
     token: ${HUGGINGFACE_TOKEN:}
+  prioritization:
+    high-keywords:
+      - critical
+      - urgent
+      - breaking
+      - security
+    low-keywords:
+      - minor
+      - typo
+      - chore
+      - docs
+  grouping:
+    window-ms: 30000
