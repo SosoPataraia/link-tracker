@@ -17,7 +17,9 @@ class StubSummarizerTest {
         var filtering = new AiAgentProperties.Filtering(List.of(), List.of(), 5);
         var summarization = new AiAgentProperties.Summarization(THRESHOLD, "stub");
         var aiApi = new AiAgentProperties.AiApi("http://localhost", "");
-        var properties = new AiAgentProperties(filtering, summarization, aiApi);
+        var prioritization = new AiAgentProperties.Prioritization(List.of("critical"), List.of("typo"));
+        var grouping = new AiAgentProperties.Grouping(30000L);
+        var properties = new AiAgentProperties(filtering, summarization, aiApi, prioritization, grouping);
         summarizer = new StubSummarizer(properties);
     }
 

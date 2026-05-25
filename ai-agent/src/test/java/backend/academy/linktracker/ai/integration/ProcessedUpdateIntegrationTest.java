@@ -25,12 +25,14 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @TestPropertySource(
         properties = {
             "spring.kafka.schema-registry.url=mock://test",
@@ -70,9 +72,9 @@ class ProcessedUpdateIntegrationTest {
             await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
                 ConsumerRecords<String, ProcessedUpdateEvent> records = consumer.poll(Duration.ofMillis(500));
                 records.forEach(r -> received.add(r.value()));
-                assertThat(received).isNotEmpty();
-                assertThat(received.getFirst().getId()).isEqualTo(100L);
-                assertThat(received.getFirst().getPriority()).isEqualTo(Priority.HIGH);
+                var ours = received.stream().filter(e -> e.getId() == 100L).findFirst();
+                assertThat(ours).isPresent();
+                assertThat(ours.get().getPriority()).isEqualTo(Priority.HIGH);
             });
         }
     }

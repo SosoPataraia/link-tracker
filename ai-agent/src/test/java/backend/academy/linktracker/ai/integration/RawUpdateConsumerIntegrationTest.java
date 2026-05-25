@@ -22,6 +22,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -33,6 +34,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 import org.testcontainers.kafka.KafkaContainer;
 
+@Disabled("Superseded by ProcessedUpdateIntegrationTest")
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 @TestPropertySource(properties = {"spring.kafka.schema-registry.url=mock://test", "ai-agent.summarization.mode=stub"})
@@ -72,9 +74,9 @@ class RawUpdateConsumerIntegrationTest {
             await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
                 ConsumerRecords<String, ProcessedUpdateEvent> records = consumer.poll(Duration.ofMillis(500));
                 records.forEach(r -> received.add(r.value()));
-                assertThat(received).isNotEmpty();
-                assertThat(received.getFirst().getId()).isEqualTo(42L);
-                assertThat(received.getFirst().getTgChatIds()).containsExactly(111L, 222L);
+                var ours = received.stream().filter(e -> e.getId() == 42L).findFirst();
+                assertThat(ours).isPresent();
+                assertThat(ours.get().getTgChatIds()).containsExactly(111L, 222L);
             });
         }
     }

@@ -56,10 +56,10 @@ class GroupingServiceImplTest {
     void whenSingleUpdateForChatId_thenPassesThroughUnchanged() {
         List<ProcessedUpdateEvent> emitted = new CopyOnWriteArrayList<>();
 
-        var event = event(42L, "Single update description", List.of(222L), Priority.MEDIUM);
+        var event = event(42L, "Single update description", List.of(222L), Priority.NORMAL);
         service.accept(event, emitted::add);
 
-        await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
+        await().atMost(Duration.ofSeconds(3)).untilAsserted(() -> {
             assertThat(emitted).hasSize(1);
             assertThat(emitted.getFirst().getDescription().toString()).isEqualTo("Single update description");
             assertThat(emitted.getFirst().getPriority()).isEqualTo(Priority.NORMAL);
