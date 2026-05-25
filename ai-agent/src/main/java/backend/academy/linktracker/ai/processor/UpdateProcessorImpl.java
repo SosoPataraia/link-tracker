@@ -4,8 +4,10 @@ import backend.academy.linktracker.ai.config.AiAgentProperties;
 import backend.academy.linktracker.ai.config.KafkaTopicProperties;
 import backend.academy.linktracker.ai.filter.FilterResult;
 import backend.academy.linktracker.ai.filter.UpdateFilter;
+import backend.academy.linktracker.ai.grouping.GroupingService;
+import backend.academy.linktracker.ai.priority.PrioritizationService;
+import backend.academy.linktracker.ai.priority.Priority;
 import backend.academy.linktracker.ai.summarizer.Summarizer;
-import backend.academy.linktracker.avro.Priority;
 import backend.academy.linktracker.avro.ProcessedUpdateEvent;
 import backend.academy.linktracker.avro.RawUpdateEvent;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +21,8 @@ public class UpdateProcessorImpl implements UpdateProcessor {
 
     private final UpdateFilter updateFilter;
     private final Summarizer summarizer;
+    private final PrioritizationService prioritizationService;
+    private final GroupingService groupingService;
     private final KafkaTemplate<String, ProcessedUpdateEvent> kafkaTemplate;
     private final AiAgentProperties properties;
     private final KafkaTopicProperties kafkaTopicProperties;
@@ -26,11 +30,15 @@ public class UpdateProcessorImpl implements UpdateProcessor {
     public UpdateProcessorImpl(
             UpdateFilter updateFilter,
             Summarizer summarizer,
+            PrioritizationService prioritizationService,
+            GroupingService groupingService,
             @Qualifier("processedKafkaTemplate") KafkaTemplate<String, ProcessedUpdateEvent> kafkaTemplate,
             AiAgentProperties properties,
             KafkaTopicProperties kafkaTopicProperties) {
         this.updateFilter = updateFilter;
         this.summarizer = summarizer;
+        this.prioritizationService = prioritizationService;
+        this.groupingService = groupingService;
         this.kafkaTemplate = kafkaTemplate;
         this.properties = properties;
         this.kafkaTopicProperties = kafkaTopicProperties;
@@ -54,17 +62,29 @@ public class UpdateProcessorImpl implements UpdateProcessor {
             description = summarizer.summarize(description);
         }
 
+        Priority priority = prioritizationService.determine(description);
+
         var processed = ProcessedUpdateEvent.newBuilder()
                 .setId(event.getId())
                 .setDescription(description)
                 .setTgChatIds(event.getTgChatIds())
-                .setPriority(Priority.NORMAL)
+                .setPriority(priority.toAvro())
                 .build();
 
-        kafkaTemplate.send(kafkaTopicProperties.processedUpdates(), String.valueOf(event.getId()), processed);
+        log.atInfo()
+                .addKeyValue("id", event.getId())
+                .addKeyValue("priority", priority)
+                .log("processor.prioritized");
+
+        groupingService.accept(processed, this::publish);
+    }
+
+    private void publish(ProcessedUpdateEvent event) {
+        kafkaTemplate.send(kafkaTopicProperties.processedUpdates(), String.valueOf(event.getId()), event);
         log.atInfo()
                 .addKeyValue("id", event.getId())
                 .addKeyValue("topic", kafkaTopicProperties.processedUpdates())
+                .addKeyValue("priority", event.getPriority())
                 .log("processor.published");
     }
 }
