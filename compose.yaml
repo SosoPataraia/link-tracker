@@ -164,6 +164,40 @@ services:
           --if-not-exists \
           --config retention.ms=2592000000
         echo 'Topic link-updates.DLT created.'
+        /opt/kafka/bin/kafka-topics.sh --create \
+          --bootstrap-server kafka-1:9092 \
+          --topic link.raw-updates \
+          --partitions 3 \
+          --replication-factor 3 \
+          --if-not-exists \
+          --config retention.ms=604800000 \
+          --config min.insync.replicas=2
+        echo 'Topic link.raw-updates created.'
+        /opt/kafka/bin/kafka-topics.sh --create \
+          --bootstrap-server kafka-1:9092 \
+          --topic link.raw-updates.DLT \
+          --partitions 3 \
+          --replication-factor 3 \
+          --if-not-exists \
+          --config retention.ms=2592000000
+        echo 'Topic link.raw-updates.DLT created.'
+        /opt/kafka/bin/kafka-topics.sh --create \
+          --bootstrap-server kafka-1:9092 \
+          --topic link.processed-updates \
+          --partitions 3 \
+          --replication-factor 3 \
+          --if-not-exists \
+          --config retention.ms=604800000 \
+          --config min.insync.replicas=2
+        echo 'Topic link.processed-updates created.'
+        /opt/kafka/bin/kafka-topics.sh --create \
+          --bootstrap-server kafka-1:9092 \
+          --topic link.processed-updates.DLT \
+          --partitions 3 \
+          --replication-factor 3 \
+          --if-not-exists \
+          --config retention.ms=2592000000
+        echo 'Topic link.processed-updates.DLT created.'
 
   valkey:
     image: valkey/valkey:8-alpine
