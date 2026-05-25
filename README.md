@@ -6,7 +6,12 @@ A Spring Boot microservices application that tracks changes on GitHub repositori
 
 - **bot** (port 8080) — Telegram bot, handles user commands and sends notifications
 - **scrapper** (port 8081) — Scheduler, polls GitHub/SO APIs for changes and notifies the bot
+- **ai-agent** (port 8082) — AI Agent, reads raw updates from Scrapper, applies prioritization and grouping, publishes processed events for the Bot
 - Communication: **Apache Kafka** (default) or HTTP (configurable)
+
+```
+Scrapper → link.raw-updates → AI Agent → link.processed-updates → Bot → Telegram
+```
 
 ## Prerequisites
 
@@ -27,7 +32,7 @@ This starts:
 - Kafka UI (port 8090) — browse topics and messages at http://localhost:8090
 - Valkey — 1 primary + 2 replicas (primary on port 6379)
 
-Wait ~10 seconds for Kafka to be ready.
+Wait ~20 seconds for Kafka to be ready and all topics to be created.
 
 ### 2. Configure environment
 
@@ -36,12 +41,18 @@ cp scrapper/.env.example scrapper/.env
 ```
 
 Edit `scrapper/.env` and fill in your tokens. The app starts without tokens too — GitHub and SO will be called unauthenticated (lower rate limits but functional).
+
+```
 GITHUB_TOKEN=your_github_token_here
 KAFKA_BOOTSTRAP_SERVERS=localhost:29092
+```
 
 Create `bot/.env`:
+
+```
 TELEGRAM_TOKEN=your_telegram_token_here
 KAFKA_BOOTSTRAP_SERVERS=localhost:29092
+```
 
 ### 3. Run scrapper
 
@@ -53,7 +64,15 @@ cd scrapper
 
 Wait for `Started ScrapperApplication in X seconds`.
 
-### 4. Run bot (separate terminal)
+### 4. Run AI Agent (separate terminal)
+
+```bash
+cd ai-agent
+..\mvnw spring-boot:run -DskipTests      # Windows
+../mvnw spring-boot:run -DskipTests      # Linux/macOS
+```
+
+### 5. Run bot (separate terminal)
 
 ```bash
 cd bot
@@ -75,8 +94,15 @@ Docker Desktop must be running.
 ### All bot tests:
 
 ```bash
-cd bot
-..\mvnw test
+.\mvnw test -pl bot -am        # Windows
+./mvnw test -pl bot -am        # Linux/macOS
+```
+
+### All ai-agent tests:
+
+```bash
+.\mvnw test -pl ai-agent -am        # Windows
+./mvnw test -pl ai-agent -am        # Linux/macOS
 ```
 
 ### Integration test — Scrapper → Kafka → Bot:
@@ -88,8 +114,31 @@ cd scrapper
 
 This test verifies the full message flow:
 1. `LinkCheckerService` detects a new GitHub issue
-2. Sends a `LinkUpdate` message to the `link-updates` Kafka topic
+2. Sends a `LinkUpdate` message to the `link.raw-updates` Kafka topic
 3. A raw Kafka consumer verifies the message arrived with correct content
+
+## AI Agent Service
+
+The AI Agent sits between Scrapper and Bot in the Kafka pipeline and handles three responsibilities:
+
+**Filtering** — drops updates containing stop-words, from excluded authors, or below minimum length.
+
+**Prioritization** — assigns HIGH, MEDIUM, or LOW priority based on keywords in the description. HIGH keywords take precedence over LOW. If neither is found, priority is MEDIUM.
+
+**Grouping** — buffers updates for the same `tgChatId` within a configurable time window. Multiple updates for the same chat are merged into one numbered list. Priority of the merged message is the maximum of all buffered priorities.
+
+### AI Agent configuration
+
+| Property | Default | Description |
+|---|---|---|
+| `ai-agent.filtering.stop-words` | spam, ads, promo | Updates containing these words are dropped |
+| `ai-agent.filtering.excluded-authors` | bot-user | Updates from these authors are dropped |
+| `ai-agent.filtering.min-length` | 20 | Minimum description length to pass filter |
+| `ai-agent.summarization.threshold` | 500 | Descriptions longer than this are summarized |
+| `ai-agent.summarization.mode` | ai | `ai` uses HuggingFace API, `stub` truncates |
+| `ai-agent.prioritization.high-keywords` | critical, urgent, breaking, security | Keywords that trigger HIGH priority |
+| `ai-agent.prioritization.low-keywords` | minor, typo, chore, docs | Keywords that trigger LOW priority |
+| `ai-agent.grouping.window-ms` | 30000 | Grouping window in milliseconds |
 
 ## Caching (Valkey)
 
@@ -129,7 +178,7 @@ Client-side caching achieves the highest throughput by serving from JVM memory. 
 
 ## Notification Transport
 
-By default, scrapper sends notifications to bot via **Kafka**. To switch to HTTP:
+By default, scrapper sends notifications to AI Agent via **Kafka**. To switch to HTTP (bypasses AI Agent):
 
 ```yaml
 # scrapper/src/main/resources/application.yaml
@@ -179,24 +228,25 @@ The bot consumer handles errors in three categories:
 
 ## Kafka Topic Configuration
 
-Topics are created programmatically via Spring Kafka `NewTopic` beans on application startup.
+Topics are created via `kafka-init` in docker-compose on startup.
 
-### `link-updates`
+### `link.raw-updates`
 
-|        Setting        |       Value        |                                      Why                                       |
-|-----------------------|--------------------|--------------------------------------------------------------------------------|
-| Partitions            | 3                  | Allows up to 3 bot instances to consume in parallel                            |
-| Replication factor    | 3                  | Every message stored on all 3 brokers — survives 2 broker failures             |
-| `retention.ms`        | 604800000 (7 days) | Enough time for manual inspection if bot is down for a while                   |
-| `min.insync.replicas` | 2                  | A write is only confirmed when 2 out of 3 brokers have it — prevents data loss |
+|        Setting        |       Value        |                         Why                          |
+|-----------------------|--------------------|------------------------------------------------------|
+| Partitions            | 3                  | Allows parallel consumption by AI Agent              |
+| Replication factor    | 3                  | Survives 2 broker failures                           |
+| `retention.ms`        | 604800000 (7 days) | Time for inspection if AI Agent is down              |
+| `min.insync.replicas` | 2                  | Write confirmed on 2/3 brokers — prevents data loss  |
 
-### `link-updates.DLT`
+### `link.processed-updates`
 
-|      Setting       |        Value         |                                   Why                                    |
-|--------------------|----------------------|--------------------------------------------------------------------------|
-| Partitions         | 3                    | Matches main topic                                                       |
-| Replication factor | 3                    | Dead letters are important for debugging — keep them safe                |
-| `retention.ms`     | 2592000000 (30 days) | Longer retention — these need manual review and shouldn't expire quickly |
+|        Setting        |       Value        |                         Why                          |
+|-----------------------|--------------------|------------------------------------------------------|
+| Partitions            | 3                  | Allows up to 3 bot instances to consume in parallel  |
+| Replication factor    | 3                  | Survives 2 broker failures                           |
+| `retention.ms`        | 604800000 (7 days) | Time for inspection if bot is down                   |
+| `min.insync.replicas` | 2                  | Write confirmed on 2/3 brokers — prevents data loss  |
 
 ## Resilience (HW-7)
 
@@ -225,7 +275,7 @@ The scrapper protects all outgoing HTTP calls (GitHub, StackOverflow, bot) with 
 | `app.rate-limit.refill-tokens`                        | `50`              | Tokens refilled per period                     |
 | `app.rate-limit.refill-period`                        | `1m`              | Refill period                                  |
 
-Circuit breaker parameters (`sliding-window-size`, `failure-rate-threshold`, `wait-duration-in-open-state`, etc.) are configured per client under `resilience4j.circuitbreaker.instances` in `application.yaml`.
+Circuit breaker parameters are configured per client under `resilience4j.circuitbreaker.instances` in `application.yaml`.
 
 ### Switching retry strategy
 
@@ -257,4 +307,3 @@ The `scrapper` database has tables but no Liquibase changelog. Clean solution:
 docker compose down -v
 docker compose up -d
 ```
-
