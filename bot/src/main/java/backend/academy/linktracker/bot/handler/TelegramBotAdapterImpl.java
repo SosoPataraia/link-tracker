@@ -1,6 +1,7 @@
 package backend.academy.linktracker.bot.handler;
 
 import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.request.SendMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +19,12 @@ public class TelegramBotAdapterImpl implements TelegramBotAdapter {
         try {
             telegramBot.execute(new SendMessage(chatId, text));
         } catch (Exception e) {
-            log.error("Failed to send message to chatId={}: {}", chatId, e.getMessage());
+            log.atError().addKeyValue("chatId", chatId).log("telegram.send.failed", e);
         }
+    }
+
+    @Override
+    public void setUpdatesListener(UpdatesListener listener) {
+        telegramBot.setUpdatesListener(listener);
     }
 }

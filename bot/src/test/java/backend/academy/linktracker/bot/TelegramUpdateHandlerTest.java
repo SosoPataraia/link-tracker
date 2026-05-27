@@ -20,7 +20,6 @@ import backend.academy.linktracker.bot.handler.TelegramUpdateHandler;
 import backend.academy.linktracker.bot.repository.InMemorySessionRepository;
 import backend.academy.linktracker.bot.repository.SessionRepository;
 import backend.academy.linktracker.bot.state.UserState;
-import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Chat;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
@@ -38,9 +37,6 @@ import org.mockito.quality.Strictness;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class TelegramUpdateHandlerTest {
-
-    @Mock
-    TelegramBot telegramBot;
 
     @Mock
     TelegramBotAdapter telegramBotAdapter;
@@ -63,8 +59,7 @@ class TelegramUpdateHandlerTest {
                 new CancelCommand(telegramBotAdapter, sessionRepository),
                 new HelpCommand(telegramBotAdapter, List.of()));
 
-        handler =
-                new TelegramUpdateHandler(telegramBot, telegramBotAdapter, sessionRepository, scrapperClient, commands);
+        handler = new TelegramUpdateHandler(telegramBotAdapter, sessionRepository, scrapperClient, commands);
     }
 
     @Test

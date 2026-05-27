@@ -6,7 +6,6 @@ import backend.academy.linktracker.bot.dto.BotUpdate;
 import backend.academy.linktracker.bot.model.UserSession;
 import backend.academy.linktracker.bot.repository.SessionRepository;
 import backend.academy.linktracker.bot.state.UserState;
-import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.Update;
 import jakarta.annotation.PostConstruct;
@@ -23,19 +22,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class TelegramUpdateHandler {
 
-    private final TelegramBot telegramBot;
     private final TelegramBotAdapter telegramBotAdapter;
     private final SessionRepository sessionRepository;
     private final ScrapperClient scrapperClient;
     private final Map<String, BotCommand> commandMap;
 
     public TelegramUpdateHandler(
-            TelegramBot telegramBot,
             TelegramBotAdapter telegramBotAdapter,
             SessionRepository sessionRepository,
             ScrapperClient scrapperClient,
             List<BotCommand> commands) {
-        this.telegramBot = telegramBot;
         this.telegramBotAdapter = telegramBotAdapter;
         this.sessionRepository = sessionRepository;
         this.scrapperClient = scrapperClient;
@@ -44,7 +40,7 @@ public class TelegramUpdateHandler {
 
     @PostConstruct
     public void init() {
-        telegramBot.setUpdatesListener(updates -> {
+        telegramBotAdapter.setUpdatesListener(updates -> {
             for (Update update : updates) {
                 try {
                     handleUpdate(update);

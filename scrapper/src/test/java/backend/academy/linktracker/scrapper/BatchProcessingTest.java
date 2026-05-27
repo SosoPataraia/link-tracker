@@ -148,7 +148,7 @@ class BatchProcessingTest {
 
         var found = linkRepository.findByChatAndUrl(42L, "https://github.com/user/repo");
         assertThat(found).isPresent();
-        assertThat(found.get().getTags()).containsExactlyInAnyOrder("work", "java");
+        assertThat(found.orElseThrow().getTags()).containsExactlyInAnyOrder("work", "java");
         assertThat(chatRepository.exists(42L)).isTrue();
     }
 
