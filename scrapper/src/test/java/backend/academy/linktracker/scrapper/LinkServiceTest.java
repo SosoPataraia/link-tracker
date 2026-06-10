@@ -16,12 +16,14 @@ import backend.academy.linktracker.scrapper.dto.github.IssueItem;
 import backend.academy.linktracker.scrapper.dto.stackoverflow.AnswerItem;
 import backend.academy.linktracker.scrapper.dto.stackoverflow.CommentItem;
 import backend.academy.linktracker.scrapper.model.TrackedLink;
-import backend.academy.linktracker.scrapper.repository.InMemoryLinkRepository;
-import backend.academy.linktracker.scrapper.service.LinkCheckerService;
-import backend.academy.linktracker.scrapper.service.LinkCheckerServiceImpl;
+import backend.academy.linktracker.scrapper.properties.SchedulerProperties;
+import backend.academy.linktracker.scrapper.repository.InMemoryChatRepository;
+import backend.academy.linktracker.scrapper.service.LinkService;
+import backend.academy.linktracker.scrapper.service.LinkServiceImpl;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,7 +32,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class LinkCheckerServiceTest {
+class LinkServiceTest {
 
     @Mock
     GitHubClient gitHubClient;
@@ -42,23 +44,30 @@ class LinkCheckerServiceTest {
     BotClient botClient;
 
     InMemoryLinkRepository linkRepository;
-    LinkCheckerService service;
+    LinkService service;
 
     @BeforeEach
     void setUp() {
         linkRepository = new InMemoryLinkRepository();
-        service = new LinkCheckerServiceImpl(linkRepository, gitHubClient, stackOverflowClient, botClient);
+        var props = new SchedulerProperties();
+        service = new LinkServiceImpl(
+                linkRepository,
+                new InMemoryChatRepository(),
+                gitHubClient,
+                stackOverflowClient,
+                botClient,
+                props,
+                Executors.newSingleThreadExecutor());
     }
 
     @Test
     void newIssue_sendsUpdateWithCorrectChatId() {
         linkRepository.save(link(100L, "https://github.com/user/repo"));
 
-        var issue = issueItem("Bug in login", "alice", Instant.parse("2024-01-15T10:00:00Z"), "Stack trace here");
-        when(gitHubClient.getNewIssues(anyString(), anyString(), any())).thenReturn(List.of(issue));
-        when(gitHubClient.getNewPullRequests(anyString(), anyString(), any())).thenReturn(List.of());
+        when(gitHubClient.getIssuesAndPullRequests(anyString(), anyString(), any()))
+                .thenReturn(List.of(issueItem("Bug in login", "alice", Instant.now(), "Stack trace", false)));
 
-        service.checkLinks(linkRepository.findAll());
+        service.checkAllLinks();
 
         var captor = ArgumentCaptor.forClass(LinkUpdate.class);
         verify(botClient).sendUpdate(captor.capture());
@@ -70,11 +79,10 @@ class LinkCheckerServiceTest {
     void newPR_sendsUpdateWithCorrectChatId() {
         linkRepository.save(link(100L, "https://github.com/user/repo"));
 
-        when(gitHubClient.getNewIssues(anyString(), anyString(), any())).thenReturn(List.of());
-        when(gitHubClient.getNewPullRequests(anyString(), anyString(), any()))
-                .thenReturn(List.of(issueItem("Add dark mode", "bob", Instant.parse("2024-01-15T10:00:00Z"), "desc")));
+        when(gitHubClient.getIssuesAndPullRequests(anyString(), anyString(), any()))
+                .thenReturn(List.of(issueItem("Add dark mode", "bob", Instant.now(), "desc", true)));
 
-        service.checkLinks(linkRepository.findAll());
+        service.checkAllLinks();
 
         var captor = ArgumentCaptor.forClass(LinkUpdate.class);
         verify(botClient).sendUpdate(captor.capture());
@@ -85,10 +93,10 @@ class LinkCheckerServiceTest {
     void noNewActivity_doesNotNotify() {
         linkRepository.save(link(100L, "https://github.com/user/repo"));
 
-        when(gitHubClient.getNewIssues(anyString(), anyString(), any())).thenReturn(List.of());
-        when(gitHubClient.getNewPullRequests(anyString(), anyString(), any())).thenReturn(List.of());
+        when(gitHubClient.getIssuesAndPullRequests(anyString(), anyString(), any()))
+                .thenReturn(List.of());
 
-        service.checkLinks(linkRepository.findAll());
+        service.checkAllLinks();
 
         verify(botClient, never()).sendUpdate(any());
     }
@@ -98,13 +106,16 @@ class LinkCheckerServiceTest {
         linkRepository.save(link(100L, "https://github.com/user/repo"));
         linkRepository.save(link(999L, "https://github.com/other/other"));
 
-        when(gitHubClient.getNewIssues("user", "repo", Instant.EPOCH))
-                .thenReturn(List.of(issueItem("Issue", "alice", Instant.parse("2024-01-15T10:00:00Z"), "body")));
-        when(gitHubClient.getNewPullRequests("user", "repo", Instant.EPOCH)).thenReturn(List.of());
-        when(gitHubClient.getNewIssues("other", "other", Instant.EPOCH)).thenReturn(List.of());
-        when(gitHubClient.getNewPullRequests("other", "other", Instant.EPOCH)).thenReturn(List.of());
+        when(gitHubClient.getIssuesAndPullRequests(anyString(), anyString(), any()))
+                .thenAnswer(inv -> {
+                    String owner = inv.getArgument(0);
+                    if ("user".equals(owner)) {
+                        return List.of(issueItem("Issue", "alice", Instant.now(), "body", false));
+                    }
+                    return List.of();
+                });
 
-        service.checkLinks(linkRepository.findAll());
+        service.checkAllLinks();
 
         var captor = ArgumentCaptor.forClass(LinkUpdate.class);
         verify(botClient).sendUpdate(captor.capture());
@@ -121,7 +132,7 @@ class LinkCheckerServiceTest {
                 .thenReturn(List.of(answerItem("charlie", 1705312200L, "Use JUnit 5")));
         when(stackOverflowClient.getNewComments(anyLong(), any())).thenReturn(List.of());
 
-        service.checkLinks(linkRepository.findAll());
+        service.checkAllLinks();
 
         var captor = ArgumentCaptor.forClass(LinkUpdate.class);
         verify(botClient).sendUpdate(captor.capture());
@@ -138,7 +149,7 @@ class LinkCheckerServiceTest {
         when(stackOverflowClient.getNewComments(anyLong(), any()))
                 .thenReturn(List.of(commentItem("dave", 1705312200L, "Thanks!")));
 
-        service.checkLinks(linkRepository.findAll());
+        service.checkAllLinks();
 
         var captor = ArgumentCaptor.forClass(LinkUpdate.class);
         verify(botClient).sendUpdate(captor.capture());
@@ -146,47 +157,51 @@ class LinkCheckerServiceTest {
     }
 
     @Test
-    void apiError_doesNotThrow() {
-        linkRepository.save(link(100L, "https://github.com/user/repo"));
-
-        when(gitHubClient.getNewIssues(anyString(), anyString(), any())).thenReturn(List.of());
-        when(gitHubClient.getNewPullRequests(anyString(), anyString(), any())).thenReturn(List.of());
-
-        // Should not throw
-        service.checkLinks(linkRepository.findAll());
-        verify(botClient, never()).sendUpdate(any());
-    }
-
-    @Test
     void lastChecked_isUpdatedAfterCheck() {
         var saved = linkRepository.save(link(100L, "https://github.com/user/repo"));
 
-        when(gitHubClient.getNewIssues(anyString(), anyString(), any())).thenReturn(List.of());
-        when(gitHubClient.getNewPullRequests(anyString(), anyString(), any())).thenReturn(List.of());
+        when(gitHubClient.getIssuesAndPullRequests(anyString(), anyString(), any()))
+                .thenReturn(List.of());
 
-        service.checkLinks(linkRepository.findAll());
+        service.checkAllLinks();
 
         var updated = linkRepository.findById(saved.getId()).orElseThrow();
         assertThat(updated.getLastChecked()).isNotNull();
     }
 
-    // --- helpers ---
+    @Test
+    void apiError_doesNotAdvanceLastChecked_andSendsFailureNotice() {
+        var saved = linkRepository.save(link(100L, "https://github.com/user/repo"));
+        Instant before = saved.getLastChecked();
+
+        when(gitHubClient.getIssuesAndPullRequests(anyString(), anyString(), any()))
+                .thenThrow(new RuntimeException("API down"));
+
+        service.checkAllLinks();
+
+        var updated = linkRepository.findById(saved.getId()).orElseThrow();
+        assertThat(updated.getLastChecked()).isEqualTo(before);
+        verify(botClient).sendUpdate(any());
+    }
 
     private TrackedLink link(long chatId, String url) {
         var l = new TrackedLink();
         l.setChatId(chatId);
         l.setUrl(url);
         l.setTags(List.of());
-        l.setLastChecked(null); // null → service uses Instant.EPOCH as since
+        l.setLastChecked(Instant.EPOCH);
         l.setLastUpdated(Instant.now());
         return l;
     }
 
-    private IssueItem issueItem(String title, String login, Instant createdAt, String body) {
+    private IssueItem issueItem(String title, String login, Instant createdAt, String body, boolean isPr) {
         var item = new IssueItem();
         item.setTitle(title);
         item.setCreatedAt(createdAt);
         item.setBody(body);
+        if (isPr) {
+            item.setPullRequest(new Object());
+        }
         var user = new IssueItem.UserInfo();
         user.setLogin(login);
         item.setUser(user);

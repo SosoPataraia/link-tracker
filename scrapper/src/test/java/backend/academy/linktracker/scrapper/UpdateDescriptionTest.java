@@ -9,37 +9,6 @@ import org.junit.jupiter.api.Test;
 class UpdateDescriptionTest {
 
     @Test
-    void truncate_shorterThan200_returnsAsIs() {
-        String input = "Short text";
-        assertThat(UpdateDescription.truncate(input)).isEqualTo("Short text");
-    }
-
-    @Test
-    void truncate_exactly200Chars_returnsAsIs() {
-        String input = "A".repeat(200);
-        assertThat(UpdateDescription.truncate(input)).isEqualTo(input);
-    }
-
-    @Test
-    void truncate_longerThan200_truncatesAndAppendsDots() {
-        String input = "A".repeat(300);
-        String result = UpdateDescription.truncate(input);
-        assertThat(result).hasSize(203); // 200 + "..."
-        assertThat(result).endsWith("...");
-        assertThat(result).startsWith("A".repeat(200));
-    }
-
-    @Test
-    void truncate_nullInput_returnsEmpty() {
-        assertThat(UpdateDescription.truncate(null)).isEmpty();
-    }
-
-    @Test
-    void truncate_blankInput_returnsEmpty() {
-        assertThat(UpdateDescription.truncate("   ")).isEmpty();
-    }
-
-    @Test
     void format_newIssue_containsAllFields() {
         var desc = new UpdateDescription(
                 UpdateDescription.Type.NEW_ISSUE,

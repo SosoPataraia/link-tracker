@@ -22,14 +22,6 @@ public class UpdateDescription {
     private final Instant createdAt;
     private final String preview;
 
-    private static final int PREVIEW_LENGTH = 200;
-
-    public static String truncate(String text) {
-        if (text == null || text.isBlank()) return "";
-        String stripped = text.stripLeading();
-        return stripped.length() <= PREVIEW_LENGTH ? stripped : stripped.substring(0, PREVIEW_LENGTH) + "...";
-    }
-
     public String format(String url) {
         String typeLabel =
                 switch (type) {

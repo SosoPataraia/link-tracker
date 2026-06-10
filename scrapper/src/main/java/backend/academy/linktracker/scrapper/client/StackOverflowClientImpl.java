@@ -30,7 +30,6 @@ public class StackOverflowClientImpl implements StackOverflowClient {
                     .uri("/questions/{id}?site=stackoverflow", questionId)
                     .retrieve()
                     .body(QuestionResponse.class);
-
             if (response != null
                     && response.getItems() != null
                     && !response.getItems().isEmpty()) {
@@ -46,71 +45,60 @@ public class StackOverflowClientImpl implements StackOverflowClient {
 
     @Override
     public Optional<QuestionItem> getQuestion(long questionId) {
-        try {
-            var response = stackOverflowRestClient
-                    .get()
-                    .uri("/questions/{id}?site=stackoverflow&filter=withbody", questionId)
-                    .retrieve()
-                    .body(QuestionResponse.class);
-            if (response != null
-                    && response.getItems() != null
-                    && !response.getItems().isEmpty()) {
-                return Optional.of(response.getItems().getFirst());
-            }
-            return Optional.empty();
-        } catch (RestClientException e) {
-            log.atError().addKeyValue("questionId", questionId).log("stackoverflow.question.fetch.failed", e);
-            return Optional.empty();
+        var response = stackOverflowRestClient
+                .get()
+                .uri("/questions/{id}?site=stackoverflow&filter=withbody", questionId)
+                .retrieve()
+                .body(QuestionResponse.class);
+        if (response != null
+                && response.getItems() != null
+                && !response.getItems().isEmpty()) {
+            return Optional.of(response.getItems().getFirst());
         }
+        return Optional.empty();
     }
 
     @Override
     public List<AnswerItem> getNewAnswers(long questionId, Instant since) {
-        try {
-            long sinceEpoch = since.getEpochSecond();
-            var response = stackOverflowRestClient
-                    .get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/questions/{id}/answers")
-                            .queryParam("site", "stackoverflow")
-                            .queryParam("filter", "withbody")
-                            .queryParam("fromdate", sinceEpoch)
-                            .queryParam("order", "desc")
-                            .queryParam("sort", "creation")
-                            .queryParam("pagesize", "50")
-                            .build(questionId))
-                    .retrieve()
-                    .body(new ParameterizedTypeReference<StackOverflowItemsResponse<AnswerItem>>() {});
-            if (response == null || response.getItems() == null) return List.of();
-            return response.getItems();
-        } catch (RestClientException e) {
-            log.atError().addKeyValue("questionId", questionId).log("stackoverflow.answers.fetch.failed", e);
+        long sinceEpoch = since.getEpochSecond();
+        var response = stackOverflowRestClient
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/questions/{id}/answers")
+                        .queryParam("site", "stackoverflow")
+                        .queryParam("filter", "withbody")
+                        .queryParam("fromdate", sinceEpoch)
+                        .queryParam("order", "desc")
+                        .queryParam("sort", "creation")
+                        .queryParam("pagesize", "50")
+                        .build(questionId))
+                .retrieve()
+                .body(new ParameterizedTypeReference<StackOverflowItemsResponse<AnswerItem>>() {});
+        if (response == null || response.getItems() == null) {
             return List.of();
         }
+        return response.getItems();
     }
 
     @Override
     public List<CommentItem> getNewComments(long questionId, Instant since) {
-        try {
-            long sinceEpoch = since.getEpochSecond();
-            var response = stackOverflowRestClient
-                    .get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/questions/{id}/comments")
-                            .queryParam("site", "stackoverflow")
-                            .queryParam("filter", "withbody")
-                            .queryParam("fromdate", sinceEpoch)
-                            .queryParam("order", "desc")
-                            .queryParam("sort", "creation")
-                            .queryParam("pagesize", "50")
-                            .build(questionId))
-                    .retrieve()
-                    .body(new ParameterizedTypeReference<StackOverflowItemsResponse<CommentItem>>() {});
-            if (response == null || response.getItems() == null) return List.of();
-            return response.getItems();
-        } catch (RestClientException e) {
-            log.atError().addKeyValue("questionId", questionId).log("stackoverflow.comments.fetch.failed", e);
+        long sinceEpoch = since.getEpochSecond();
+        var response = stackOverflowRestClient
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/questions/{id}/comments")
+                        .queryParam("site", "stackoverflow")
+                        .queryParam("filter", "withbody")
+                        .queryParam("fromdate", sinceEpoch)
+                        .queryParam("order", "desc")
+                        .queryParam("sort", "creation")
+                        .queryParam("pagesize", "50")
+                        .build(questionId))
+                .retrieve()
+                .body(new ParameterizedTypeReference<StackOverflowItemsResponse<CommentItem>>() {});
+        if (response == null || response.getItems() == null) {
             return List.of();
         }
+        return response.getItems();
     }
 }

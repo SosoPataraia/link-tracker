@@ -5,8 +5,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import backend.academy.linktracker.scrapper.client.BotClient;
@@ -14,12 +12,14 @@ import backend.academy.linktracker.scrapper.client.GitHubClientImpl;
 import backend.academy.linktracker.scrapper.client.StackOverflowClientImpl;
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;
 import backend.academy.linktracker.scrapper.model.TrackedLink;
-import backend.academy.linktracker.scrapper.repository.InMemoryLinkRepository;
-import backend.academy.linktracker.scrapper.service.LinkCheckerService;
-import backend.academy.linktracker.scrapper.service.LinkCheckerServiceImpl;
+import backend.academy.linktracker.scrapper.properties.SchedulerProperties;
+import backend.academy.linktracker.scrapper.repository.InMemoryChatRepository;
+import backend.academy.linktracker.scrapper.service.LinkService;
+import backend.academy.linktracker.scrapper.service.LinkServiceImpl;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,7 +43,7 @@ class StackOverflowScrapperIntegrationTest {
     BotClient botClient;
 
     InMemoryLinkRepository linkRepository;
-    LinkCheckerService service;
+    LinkService service;
 
     @BeforeEach
     void setUp() {
@@ -52,66 +52,55 @@ class StackOverflowScrapperIntegrationTest {
                 RestClient.builder().baseUrl(wireMock.baseUrl()).build());
         var soClient = new StackOverflowClientImpl(
                 RestClient.builder().baseUrl(wireMock.baseUrl()).build());
-        service = new LinkCheckerServiceImpl(linkRepository, gitHubClient, soClient, botClient);
+        var props = new SchedulerProperties();
+        service = new LinkServiceImpl(
+                linkRepository,
+                new InMemoryChatRepository(),
+                gitHubClient,
+                soClient,
+                botClient,
+                props,
+                Executors.newSingleThreadExecutor());
     }
 
     @Test
     void newAnswer_formatsMessageWithAllRequiredFields() {
-        // Question metadata
         stubFor(get(urlPathEqualTo("/questions/12345"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                         .withBody("""
-                                {
-                                  "items": [
-                                    {
-                                      "question_id": 12345,
-                                      "title": "How to test Spring Boot apps?",
-                                      "last_activity_date": 1705312200,
-                                      "owner": { "display_name": "questioner" }
-                                    }
-                                  ]
-                                }
+                                {"items":[{"question_id":12345,"title":"How to test Spring Boot apps?",
+                                "last_activity_date":1705312200,"owner":{"display_name":"questioner"}}]}
                                 """)));
 
-        // New answer
         stubFor(get(urlPathEqualTo("/questions/12345/answers"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                         .withBody("""
-                                {
-                                  "items": [
-                                    {
-                                      "answer_id": 99,
-                                      "creation_date": 1705312200,
-                                      "body": "Use @SpringBootTest annotation with Testcontainers.",
-                                      "owner": { "display_name": "alice" }
-                                    }
-                                  ]
-                                }
+                                {"items":[{"answer_id":99,"creation_date":1705312200,
+                                "body":"Use @SpringBootTest annotation with Testcontainers.",
+                                "owner":{"display_name":"alice"}}]}
                                 """)));
 
-        // No comments
         stubFor(get(urlPathEqualTo("/questions/12345/comments"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("{\"items\": []}")));
+                        .withBody("{\"items\":[]}")));
 
         linkRepository.save(link(100L, "https://stackoverflow.com/questions/12345/how-to-test"));
-
-        service.checkLinks(linkRepository.findAll());
+        service.checkAllLinks();
 
         var captor = ArgumentCaptor.forClass(LinkUpdate.class);
         verify(botClient).sendUpdate(captor.capture());
 
         String desc = captor.getValue().getDescription();
         assertThat(desc).contains("New Answer");
-        assertThat(desc).contains("How to test Spring Boot apps?"); // question title
-        assertThat(desc).contains("alice"); // username
-        assertThat(desc).contains("Use @SpringBootTest"); // preview
+        assertThat(desc).contains("How to test Spring Boot apps?");
+        assertThat(desc).contains("alice");
+        assertThat(desc).contains("Use @SpringBootTest");
     }
 
     @Test
@@ -121,44 +110,27 @@ class StackOverflowScrapperIntegrationTest {
                         .withStatus(200)
                         .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                         .withBody("""
-                                {
-                                  "items": [
-                                    {
-                                      "question_id": 12345,
-                                      "title": "How to test Spring Boot apps?",
-                                      "last_activity_date": 1705312200,
-                                      "owner": { "display_name": "questioner" }
-                                    }
-                                  ]
-                                }
+                                {"items":[{"question_id":12345,"title":"How to test Spring Boot apps?",
+                                "last_activity_date":1705312200,"owner":{"display_name":"questioner"}}]}
                                 """)));
 
         stubFor(get(urlPathEqualTo("/questions/12345/answers"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("{\"items\": []}")));
+                        .withBody("{\"items\":[]}")));
 
         stubFor(get(urlPathEqualTo("/questions/12345/comments"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                         .withBody("""
-                                {
-                                  "items": [
-                                    {
-                                      "comment_id": 55,
-                                      "creation_date": 1705312200,
-                                      "body": "Have you tried MockMvc?",
-                                      "owner": { "display_name": "bob" }
-                                    }
-                                  ]
-                                }
+                                {"items":[{"comment_id":55,"creation_date":1705312200,
+                                "body":"Have you tried MockMvc?","owner":{"display_name":"bob"}}]}
                                 """)));
 
         linkRepository.save(link(200L, "https://stackoverflow.com/questions/12345/how-to-test"));
-
-        service.checkLinks(linkRepository.findAll());
+        service.checkAllLinks();
 
         var captor = ArgumentCaptor.forClass(LinkUpdate.class);
         verify(botClient).sendUpdate(captor.capture());
@@ -170,18 +142,16 @@ class StackOverflowScrapperIntegrationTest {
     }
 
     @Test
-    void soApiUnavailable_doesNotSendUpdate_andDoesNotThrow() {
+    void soApiUnavailable_sendsFailureNoticeAndDoesNotThrow() {
         stubFor(get(urlPathEqualTo("/questions/12345")).willReturn(aResponse().withStatus(503)));
-        stubFor(get(urlPathEqualTo("/questions/12345/answers"))
-                .willReturn(aResponse().withStatus(503)));
-        stubFor(get(urlPathEqualTo("/questions/12345/comments"))
-                .willReturn(aResponse().withStatus(503)));
 
         linkRepository.save(link(100L, "https://stackoverflow.com/questions/12345/test"));
+        service.checkAllLinks();
 
-        service.checkLinks(linkRepository.findAll());
-
-        verify(botClient, never()).sendUpdate(any());
+        var captor = ArgumentCaptor.forClass(LinkUpdate.class);
+        verify(botClient).sendUpdate(captor.capture());
+        assertThat(captor.getValue().getTgChatIds()).containsExactly(100L);
+        assertThat(captor.getValue().getDescription()).contains("Не удалось проверить ссылку");
     }
 
     private TrackedLink link(long chatId, String url) {

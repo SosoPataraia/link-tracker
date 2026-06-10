@@ -6,37 +6,63 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import backend.academy.linktracker.scrapper.client.BotClient;
+import backend.academy.linktracker.scrapper.client.GitHubClient;
+import backend.academy.linktracker.scrapper.client.StackOverflowClient;
+import backend.academy.linktracker.scrapper.controller.GlobalExceptionHandler;
 import backend.academy.linktracker.scrapper.controller.LinksController;
 import backend.academy.linktracker.scrapper.controller.TgChatController;
-import backend.academy.linktracker.scrapper.repository.ChatRepository;
+import backend.academy.linktracker.scrapper.properties.SchedulerProperties;
 import backend.academy.linktracker.scrapper.repository.InMemoryChatRepository;
-import backend.academy.linktracker.scrapper.repository.InMemoryLinkRepository;
+import backend.academy.linktracker.scrapper.service.ChatServiceImpl;
+import backend.academy.linktracker.scrapper.service.LinkServiceImpl;
+import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+@ExtendWith(MockitoExtension.class)
 class LinksControllerTest {
 
     MockMvc mockMvc;
-    ChatRepository chatRepository;
-    InMemoryLinkRepository linkRepository;
+
+    @Mock
+    GitHubClient gitHubClient;
+
+    @Mock
+    StackOverflowClient stackOverflowClient;
+
+    @Mock
+    BotClient botClient;
 
     @BeforeEach
     void setUp() {
-        chatRepository = new InMemoryChatRepository();
-        linkRepository = new InMemoryLinkRepository();
+        var chatRepository = new InMemoryChatRepository();
+        var linkRepository = new InMemoryLinkRepository();
+        var schedulerProperties = new SchedulerProperties();
+        var executor = Executors.newSingleThreadExecutor();
 
-        var linksController = new LinksController(linkRepository, chatRepository);
-        var chatController = new TgChatController(chatRepository, linkRepository);
+        var linkService = new LinkServiceImpl(
+                linkRepository,
+                chatRepository,
+                gitHubClient,
+                stackOverflowClient,
+                botClient,
+                schedulerProperties,
+                executor);
+        var chatService = new ChatServiceImpl(chatRepository, linkRepository);
 
-        mockMvc = MockMvcBuilders.standaloneSetup(linksController, chatController)
+        mockMvc = MockMvcBuilders.standaloneSetup(new LinksController(linkService), new TgChatController(chatService))
+                .setControllerAdvice(new GlobalExceptionHandler())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter())
                 .build();
     }
 
-    // Scenario 3.1
     @Test
     void addAndGetLink() throws Exception {
         mockMvc.perform(post("/tg-chat/1")).andExpect(status().isOk());
@@ -54,7 +80,6 @@ class LinksControllerTest {
                 .andExpect(jsonPath("$.size").value(1));
     }
 
-    // Scenario 3.2
     @Test
     void addAndDeleteLink() throws Exception {
         mockMvc.perform(post("/tg-chat/1")).andExpect(status().isOk());
@@ -76,7 +101,6 @@ class LinksControllerTest {
                 .andExpect(jsonPath("$.size").value(0));
     }
 
-    // Scenario 3.3
     @Test
     void deleteFromNonExistentChat_returnsError() throws Exception {
         mockMvc.perform(post("/tg-chat/1")).andExpect(status().isOk());
@@ -98,11 +122,8 @@ class LinksControllerTest {
                 .andExpect(jsonPath("$.size").value(1));
     }
 
-    // Scenario 3.4
     @Test
     void addLinkToNonExistentChat_returnsError() throws Exception {
-        mockMvc.perform(post("/tg-chat/1")).andExpect(status().isOk());
-
         mockMvc.perform(post("/links")
                         .header("Tg-Chat-Id", 2)
                         .contentType("application/json")
@@ -110,7 +131,6 @@ class LinksControllerTest {
                 .andExpect(status().is4xxClientError());
     }
 
-    // Scenario 3.5
     @Test
     void workWithDeletedChat_returnsError() throws Exception {
         mockMvc.perform(post("/tg-chat/1")).andExpect(status().isOk());
@@ -123,7 +143,6 @@ class LinksControllerTest {
                 .andExpect(status().is4xxClientError());
     }
 
-    // Scenario 3.6
     @Test
     void deleteNonExistentChat_returns404() throws Exception {
         mockMvc.perform(delete("/tg-chat/1")).andExpect(status().isNotFound());

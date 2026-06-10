@@ -2,15 +2,32 @@ package backend.academy.linktracker.scrapper.controller;
 
 import backend.academy.linktracker.scrapper.dto.ApiErrorResponse;
 import java.util.Arrays;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiErrorResponse> handleStatus(ResponseStatusException ex) {
+        log.atWarn()
+                .addKeyValue("status", ex.getStatusCode())
+                .addKeyValue("reason", ex.getReason())
+                .log("request.status.error");
+        return ResponseEntity.status(ex.getStatusCode())
+                .body(new ApiErrorResponse(
+                        ex.getReason(),
+                        String.valueOf(ex.getStatusCode().value()),
+                        ex.getClass().getSimpleName(),
+                        ex.getMessage(),
+                        List.of()));
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleValidation(MethodArgumentNotValidException ex) {

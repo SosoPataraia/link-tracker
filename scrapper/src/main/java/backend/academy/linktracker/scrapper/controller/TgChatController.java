@@ -1,9 +1,6 @@
 package backend.academy.linktracker.scrapper.controller;
 
-import backend.academy.linktracker.scrapper.dto.ApiErrorResponse;
-import backend.academy.linktracker.scrapper.repository.ChatRepository;
-import backend.academy.linktracker.scrapper.repository.LinkRepository;
-import java.util.List;
+import backend.academy.linktracker.scrapper.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -21,31 +18,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class TgChatController {
 
-    private final ChatRepository chatRepository;
-    private final LinkRepository linkRepository;
+    private final ChatService chatService;
 
     @ResponseStatus(HttpStatus.OK)
     @PostMapping("/{id}")
     public void registerChat(@PathVariable long id) {
-        log.atInfo().addKeyValue("chatId", id).log("chat.registered");
-        chatRepository.register(id);
+        chatService.registerChat(id);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiErrorResponse> deleteChat(@PathVariable long id) {
-        if (!chatRepository.exists(id)) {
-            log.atWarn().addKeyValue("chatId", id).log("chat.not.found");
-            return ResponseEntity.status(404)
-                    .body(new ApiErrorResponse(
-                            "Chat not found",
-                            "404",
-                            "ChatNotFoundException",
-                            "Chat with id " + id + " not found",
-                            List.of()));
-        }
-        log.atInfo().addKeyValue("chatId", id).log("chat.deleted");
-        linkRepository.removeAllByChat(id);
-        chatRepository.remove(id);
+    public ResponseEntity<Void> deleteChat(@PathVariable long id) {
+        chatService.deleteChat(id);
         return ResponseEntity.ok().build();
     }
 }

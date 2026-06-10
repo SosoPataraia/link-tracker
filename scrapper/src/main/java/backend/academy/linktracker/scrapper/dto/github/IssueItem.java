@@ -35,4 +35,8 @@ public class IssueItem {
     public static class UserInfo {
         private String login;
     }
+
+    public void setPullRequest(Object pullRequest) {
+        this.pullRequest = pullRequest;
+    }
 }

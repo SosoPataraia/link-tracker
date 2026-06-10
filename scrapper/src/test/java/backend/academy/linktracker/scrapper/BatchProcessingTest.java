@@ -2,6 +2,7 @@ package backend.academy.linktracker.scrapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -13,7 +14,7 @@ import backend.academy.linktracker.scrapper.dto.github.IssueItem;
 import backend.academy.linktracker.scrapper.model.TrackedLink;
 import backend.academy.linktracker.scrapper.repository.ChatRepository;
 import backend.academy.linktracker.scrapper.repository.LinkRepository;
-import backend.academy.linktracker.scrapper.service.LinkCheckerService;
+import backend.academy.linktracker.scrapper.service.LinkService;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +46,7 @@ class BatchProcessingTest {
     StackOverflowClient stackOverflowClient;
 
     @Autowired
-    LinkCheckerService linkCheckerService;
+    LinkService linkService;
 
     @Autowired
     org.springframework.jdbc.core.simple.JdbcClient jdbcClient;
@@ -59,15 +60,14 @@ class BatchProcessingTest {
     }
 
     @Test
-    void findBatch_returnsStalestLinksFirst() {
+    void findLinksToCheck_returnsStalestLinksFirst() {
         chatRepository.register(1L);
 
-        // Save 3 links with different last_checked times
         var old = savedLink(1L, "https://github.com/user/old-repo", Instant.parse("2024-01-01T00:00:00Z"));
         var mid = savedLink(1L, "https://github.com/user/mid-repo", Instant.parse("2024-06-01T00:00:00Z"));
-        var recent = savedLink(1L, "https://github.com/user/new-repo", Instant.parse("2024-12-01T00:00:00Z"));
+        savedLink(1L, "https://github.com/user/new-repo", Instant.parse("2024-12-01T00:00:00Z"));
 
-        List<TrackedLink> batch = linkRepository.findBatch(0, 2);
+        List<TrackedLink> batch = linkRepository.findLinksToCheck(Instant.now(), Instant.EPOCH, 0L, 2);
 
         assertThat(batch).hasSize(2);
         assertThat(batch.get(0).getUrl()).isEqualTo(old.getUrl());
@@ -75,59 +75,57 @@ class BatchProcessingTest {
     }
 
     @Test
-    void findBatch_nullLastChecked_comesFirst() {
+    void findLinksToCheck_nullLastChecked_comesFirst() {
         chatRepository.register(1L);
 
         savedLink(1L, "https://github.com/user/checked-repo", Instant.parse("2024-01-01T00:00:00Z"));
         var nullChecked = savedLink(1L, "https://github.com/user/never-checked", null);
 
-        List<TrackedLink> batch = linkRepository.findBatch(0, 10);
+        List<TrackedLink> batch = linkRepository.findLinksToCheck(Instant.now(), Instant.EPOCH, 0L, 10);
 
         assertThat(batch.getFirst().getUrl()).isEqualTo(nullChecked.getUrl());
     }
 
     @Test
-    void findBatch_pagination_worksCorrectly() {
+    void findLinksToCheck_keysetPagination_noOverlap() {
         chatRepository.register(1L);
         for (int i = 1; i <= 5; i++) {
             savedLink(1L, "https://github.com/user/repo-" + i, Instant.parse("2024-0" + i + "-01T00:00:00Z"));
         }
 
-        List<TrackedLink> firstBatch = linkRepository.findBatch(0, 3);
-        List<TrackedLink> secondBatch = linkRepository.findBatch(3, 3);
+        List<TrackedLink> first = linkRepository.findLinksToCheck(Instant.now(), Instant.EPOCH, 0L, 3);
+        assertThat(first).hasSize(3);
 
-        assertThat(firstBatch).hasSize(3);
-        assertThat(secondBatch).hasSize(2);
+        TrackedLink last = first.getLast();
+        Instant lastChecked = last.getLastChecked() != null ? last.getLastChecked() : Instant.EPOCH;
+        List<TrackedLink> second = linkRepository.findLinksToCheck(Instant.now(), lastChecked, last.getId(), 3);
+        assertThat(second).hasSize(2);
 
-        // No overlap
-        var firstUrls = firstBatch.stream().map(TrackedLink::getUrl).toList();
-        var secondUrls = secondBatch.stream().map(TrackedLink::getUrl).toList();
+        var firstUrls = first.stream().map(TrackedLink::getUrl).toList();
+        var secondUrls = second.stream().map(TrackedLink::getUrl).toList();
         assertThat(firstUrls).doesNotContainAnyElementsOf(secondUrls);
     }
 
     @Test
-    void errorOnOneLink_doesNotPreventOthersFromBeingProcessed() {
+    void errorOnOneLink_doesNotPreventOthersFromBeingProcessed() throws InterruptedException {
         chatRepository.register(1L);
         chatRepository.register(2L);
 
         savedLink(1L, "https://github.com/user/failing-repo", Instant.EPOCH);
         savedLink(2L, "https://github.com/other/working-repo", Instant.EPOCH);
 
-        // First call throws, second returns a new issue
-        when(gitHubClient.getNewIssues("user", "failing-repo", Instant.EPOCH))
-                .thenThrow(new RuntimeException("Simulated API failure"));
-        when(gitHubClient.getNewPullRequests("user", "failing-repo", Instant.EPOCH))
-                .thenThrow(new RuntimeException("Simulated API failure"));
+        when(gitHubClient.getIssuesAndPullRequests(anyString(), anyString(), any()))
+                .thenAnswer(inv -> {
+                    String owner = inv.getArgument(0);
+                    if ("user".equals(owner)) {
+                        throw new RuntimeException("Simulated API failure");
+                    }
+                    return List.of(issueItem("Working issue", "carol"));
+                });
 
-        when(gitHubClient.getNewIssues("other", "working-repo", Instant.EPOCH))
-                .thenReturn(List.of(issueItem("Working issue", "carol")));
-        when(gitHubClient.getNewPullRequests("other", "working-repo", Instant.EPOCH))
-                .thenReturn(List.of());
+        linkService.checkAllLinks();
+        Thread.sleep(200);
 
-        // Should not throw
-        linkCheckerService.checkLinks(linkRepository.findAll());
-
-        // Working repo still got processed
         verify(botClient, atLeast(1)).sendUpdate(any());
     }
 
@@ -143,7 +141,6 @@ class BatchProcessingTest {
         link.setLastUpdated(Instant.now());
 
         var saved = linkRepository.save(link);
-
         assertThat(saved.getId()).isNotNull();
 
         var found = linkRepository.findByChatAndUrl(42L, "https://github.com/user/repo");

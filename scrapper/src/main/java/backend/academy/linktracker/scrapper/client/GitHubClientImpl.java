@@ -34,49 +34,19 @@ public class GitHubClientImpl implements GitHubClient {
     }
 
     @Override
-    public List<IssueItem> getNewIssues(String owner, String repo, Instant since) {
-        try {
-            List<IssueItem> items = gitHubRestClient
-                    .get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/repos/{owner}/{repo}/issues")
-                            .queryParam("state", "open")
-                            .queryParam("since", since.toString())
-                            .queryParam("sort", "created")
-                            .queryParam("direction", "desc")
-                            .queryParam("per_page", "50")
-                            .build(owner, repo))
-                    .retrieve()
-                    .body(new ParameterizedTypeReference<List<IssueItem>>() {});
-            if (items == null) return List.of();
-            return items.stream().filter(i -> !i.isPullRequest()).toList();
-        } catch (RestClientException e) {
-            log.atError().addKeyValue("owner", owner).addKeyValue("repo", repo).log("github.issues.fetch.failed", e);
-            return List.of();
-        }
-    }
-
-    @Override
-    public List<IssueItem> getNewPullRequests(String owner, String repo, Instant since) {
-        try {
-            List<IssueItem> items = gitHubRestClient
-                    .get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/repos/{owner}/{repo}/pulls")
-                            .queryParam("state", "open")
-                            .queryParam("sort", "created")
-                            .queryParam("direction", "desc")
-                            .queryParam("per_page", "50")
-                            .build(owner, repo))
-                    .retrieve()
-                    .body(new ParameterizedTypeReference<List<IssueItem>>() {});
-            if (items == null) return List.of();
-            return items.stream()
-                    .filter(i -> i.getCreatedAt() != null && i.getCreatedAt().isAfter(since))
-                    .toList();
-        } catch (RestClientException e) {
-            log.atError().addKeyValue("owner", owner).addKeyValue("repo", repo).log("github.pulls.fetch.failed", e);
-            return List.of();
-        }
+    public List<IssueItem> getIssuesAndPullRequests(String owner, String repo, Instant since) {
+        List<IssueItem> items = gitHubRestClient
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/repos/{owner}/{repo}/issues")
+                        .queryParam("state", "open")
+                        .queryParam("since", since.toString())
+                        .queryParam("sort", "created")
+                        .queryParam("direction", "desc")
+                        .queryParam("per_page", "50")
+                        .build(owner, repo))
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<IssueItem>>() {});
+        return items != null ? items : List.of();
     }
 }

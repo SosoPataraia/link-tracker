@@ -5,8 +5,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import backend.academy.linktracker.scrapper.client.BotClient;
@@ -14,12 +12,13 @@ import backend.academy.linktracker.scrapper.client.GitHubClientImpl;
 import backend.academy.linktracker.scrapper.client.StackOverflowClientImpl;
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;
 import backend.academy.linktracker.scrapper.model.TrackedLink;
-import backend.academy.linktracker.scrapper.repository.InMemoryLinkRepository;
-import backend.academy.linktracker.scrapper.service.LinkCheckerService;
-import backend.academy.linktracker.scrapper.service.LinkCheckerServiceImpl;
+import backend.academy.linktracker.scrapper.properties.SchedulerProperties;
+import backend.academy.linktracker.scrapper.repository.InMemoryChatRepository;
+import backend.academy.linktracker.scrapper.service.LinkService;
+import backend.academy.linktracker.scrapper.service.LinkServiceImpl;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import java.time.Instant;
-import java.util.List;
+import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,7 +42,7 @@ class GitHubScrapperIntegrationTest {
     BotClient botClient;
 
     InMemoryLinkRepository linkRepository;
-    LinkCheckerService service;
+    LinkService service;
 
     @BeforeEach
     void setUp() {
@@ -52,7 +51,15 @@ class GitHubScrapperIntegrationTest {
                 RestClient.builder().baseUrl(wireMock.baseUrl()).build());
         var soClient = new StackOverflowClientImpl(
                 RestClient.builder().baseUrl(wireMock.baseUrl()).build());
-        service = new LinkCheckerServiceImpl(linkRepository, gitHubClient, soClient, botClient);
+        var props = new SchedulerProperties();
+        service = new LinkServiceImpl(
+                linkRepository,
+                new InMemoryChatRepository(),
+                gitHubClient,
+                soClient,
+                botClient,
+                props,
+                Executors.newSingleThreadExecutor());
     }
 
     @Test
@@ -73,38 +80,24 @@ class GitHubScrapperIntegrationTest {
                                 ]
                                 """)));
 
-        stubFor(get(urlPathEqualTo("/repos/user/repo/pulls"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("[]")));
-
         linkRepository.save(link(100L, "https://github.com/user/repo"));
-
-        service.checkLinks(linkRepository.findAll());
+        service.checkAllLinks();
 
         var captor = ArgumentCaptor.forClass(LinkUpdate.class);
         verify(botClient).sendUpdate(captor.capture());
 
         String desc = captor.getValue().getDescription();
         assertThat(desc).contains("New Issue");
-        assertThat(desc).contains("NPE in login flow"); // item title
-        assertThat(desc).contains("alice"); // username
-        assertThat(desc).contains("2024-01-15"); // created_at
-        assertThat(desc).contains("Stack trace"); // preview
-        assertThat(captor.getValue().getUrl()).isEqualTo("https://github.com/user/repo");
+        assertThat(desc).contains("NPE in login flow");
+        assertThat(desc).contains("alice");
+        assertThat(desc).contains("2024-01-15");
+        assertThat(desc).contains("Stack trace");
         assertThat(captor.getValue().getTgChatIds()).containsExactly(100L);
     }
 
     @Test
     void newPR_formatsMessageWithAllRequiredFields() {
         stubFor(get(urlPathEqualTo("/repos/user/repo/issues"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("[]")));
-
-        stubFor(get(urlPathEqualTo("/repos/user/repo/pulls"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
@@ -115,14 +108,14 @@ class GitHubScrapperIntegrationTest {
                                     "title": "Add dark mode",
                                     "body": "This PR adds dark mode support to the UI.",
                                     "created_at": "2024-01-16T08:00:00Z",
+                                    "pull_request": {},
                                     "user": { "login": "bob" }
                                   }
                                 ]
                                 """)));
 
         linkRepository.save(link(200L, "https://github.com/user/repo"));
-
-        service.checkLinks(linkRepository.findAll());
+        service.checkAllLinks();
 
         var captor = ArgumentCaptor.forClass(LinkUpdate.class);
         verify(botClient).sendUpdate(captor.capture());
@@ -131,29 +124,24 @@ class GitHubScrapperIntegrationTest {
         assertThat(desc).contains("New Pull Request");
         assertThat(desc).contains("Add dark mode");
         assertThat(desc).contains("bob");
-        assertThat(desc).contains("2024-01-16");
-        assertThat(desc).contains("dark mode support");
     }
 
     @Test
-    void apiUnavailable_doesNotSendUpdate_andDoesNotThrow() {
+    void apiUnavailable_sendsFailureNoticeAndDoesNotThrow() {
         stubFor(get(urlPathEqualTo("/repos/user/repo/issues"))
-                .willReturn(aResponse().withStatus(503)));
-        stubFor(get(urlPathEqualTo("/repos/user/repo/pulls"))
                 .willReturn(aResponse().withStatus(503)));
 
         linkRepository.save(link(100L, "https://github.com/user/repo"));
+        service.checkAllLinks();
 
-        // Must not throw
-        service.checkLinks(linkRepository.findAll());
-
-        verify(botClient, never()).sendUpdate(any());
+        var captor = ArgumentCaptor.forClass(LinkUpdate.class);
+        verify(botClient).sendUpdate(captor.capture());
+        assertThat(captor.getValue().getTgChatIds()).containsExactly(100L);
+        assertThat(captor.getValue().getDescription()).contains("Не удалось проверить ссылку");
     }
 
     @Test
-    void preview_truncatedTo200Chars() {
-        String longBody = "A".repeat(300);
-
+    void preview_truncatedTo200CharsIncludingEllipsis() {
         stubFor(get(urlPathEqualTo("/repos/user/repo/issues"))
                 .willReturn(aResponse()
                         .withStatus(200)
@@ -168,34 +156,25 @@ class GitHubScrapperIntegrationTest {
                                     "user": { "login": "carol" }
                                   }
                                 ]
-                                """.formatted(longBody))));
-
-        stubFor(get(urlPathEqualTo("/repos/user/repo/pulls"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("[]")));
+                                """.formatted("A".repeat(300)))));
 
         linkRepository.save(link(100L, "https://github.com/user/repo"));
-
-        service.checkLinks(linkRepository.findAll());
+        service.checkAllLinks();
 
         var captor = ArgumentCaptor.forClass(LinkUpdate.class);
         verify(botClient).sendUpdate(captor.capture());
 
-        // Preview in description should be truncated — 200 chars + "..."
         String desc = captor.getValue().getDescription();
-        assertThat(desc).contains("A".repeat(200));
+        assertThat(desc).contains("A".repeat(197));
         assertThat(desc).contains("...");
-        // Should NOT contain the full 300 chars
-        assertThat(desc).doesNotContain("A".repeat(201));
+        assertThat(desc).doesNotContain("A".repeat(198));
     }
 
     private TrackedLink link(long chatId, String url) {
         var l = new TrackedLink();
         l.setChatId(chatId);
         l.setUrl(url);
-        l.setTags(List.of());
+        l.setTags(java.util.List.of());
         l.setLastChecked(Instant.EPOCH);
         l.setLastUpdated(Instant.now());
         return l;

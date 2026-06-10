@@ -7,17 +7,16 @@ import java.util.List;
 public interface GitHubClient {
 
     /**
-     * Returns the latest push timestamp for the repo (used as a fallback / staleness check).
+     * Returns the latest push timestamp for the repo (staleness fallback). Returns {@code null} on error.
      */
     Instant getLastUpdated(String owner, String repo);
 
     /**
-     * Returns issues (not PRs) created after {@code since}, newest first.
+     * Single call to the GitHub issues endpoint, which also returns pull requests
+     * ({@link IssueItem#isPullRequest()} tells them apart). Returns items updated since {@code since}.
+     *
+     * @throws org.springframework.web.client.RestClientException if the call fails, so the caller can
+     *     distinguish "API unavailable" from "nothing new" and avoid advancing last-checked.
      */
-    List<IssueItem> getNewIssues(String owner, String repo, Instant since);
-
-    /**
-     * Returns pull requests created after {@code since}, newest first.
-     */
-    List<IssueItem> getNewPullRequests(String owner, String repo, Instant since);
+    List<IssueItem> getIssuesAndPullRequests(String owner, String repo, Instant since);
 }

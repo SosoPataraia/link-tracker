@@ -6,10 +6,14 @@ import backend.academy.linktracker.scrapper.model.jpa.LinkEntity;
 import backend.academy.linktracker.scrapper.model.jpa.LinkTagEntity;
 import backend.academy.linktracker.scrapper.repository.LinkRepository;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
@@ -49,16 +53,19 @@ public class OrmLinkRepository implements LinkRepository {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<TrackedLink> findById(long id) {
         return linkJpaRepository.findById(id).map(e -> toModel(e, extractChatId(e)));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<TrackedLink> findByChatAndUrl(long chatId, String url) {
         return linkJpaRepository.findByChatIdAndUrl(chatId, url).map(e -> toModel(e, chatId));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TrackedLink> findAllByChat(long chatId) {
         return linkJpaRepository.findAllByChatsId(chatId).stream()
                 .map(e -> toModel(e, chatId))
@@ -66,6 +73,7 @@ public class OrmLinkRepository implements LinkRepository {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Collection<TrackedLink> findAll() {
         return linkJpaRepository.findAll().stream()
                 .flatMap(e -> e.getChats().stream().map(chat -> toModel(e, chat.getId())))
@@ -76,7 +84,9 @@ public class OrmLinkRepository implements LinkRepository {
     @Transactional
     public boolean remove(long chatId, String url) {
         Optional<LinkEntity> optLink = linkJpaRepository.findByChatIdAndUrl(chatId, url);
-        if (optLink.isEmpty()) return false;
+        if (optLink.isEmpty()) {
+            return false;
+        }
 
         LinkEntity entity = optLink.orElseThrow();
         ChatEntity chat = chatJpaRepository.getReferenceById(chatId);
@@ -111,41 +121,60 @@ public class OrmLinkRepository implements LinkRepository {
 
     @Override
     @Transactional
-    public void updateLastChecked(long linkId, Instant lastChecked) {
-        linkJpaRepository.findById(linkId).ifPresent(entity -> {
-            entity.setLastChecked(lastChecked);
-            linkJpaRepository.save(entity);
-        });
+    public void updateLastChecked(Collection<Long> linkIds, Instant lastChecked) {
+        if (linkIds.isEmpty()) {
+            return;
+        }
+        linkJpaRepository.updateLastChecked(linkIds, lastChecked);
     }
 
     @Override
-    public List<TrackedLink> findBatch(int offset, int limit) {
+    @Transactional(readOnly = true)
+    public List<TrackedLink> findLinksToCheck(
+            Instant checkedBefore, Instant cursorLastChecked, long cursorId, int limit) {
         return linkJpaRepository
-                .findAll(org.springframework.data.domain.PageRequest.of(
-                        offset / limit,
-                        limit,
-                        org.springframework.data.domain.Sort.by(
-                                org.springframework.data.domain.Sort.Order.asc("lastChecked")
-                                        .nullsFirst())))
-                .getContent()
+                .findLinksToCheck(Instant.EPOCH, checkedBefore, cursorLastChecked, cursorId, PageRequest.of(0, limit))
                 .stream()
-                .flatMap(e -> e.getChats().stream().map(chat -> toModel(e, chat.getId())))
+                .map(this::toLinkOnlyModel)
                 .toList();
     }
 
-    // --- private helpers ---
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, List<Long>> findChatIdsByLinkIds(Collection<Long> linkIds) {
+        if (linkIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, List<Long>> result = new HashMap<>();
+        for (LinkChatProjection pair : linkJpaRepository.findLinkChatPairs(linkIds)) {
+            result.computeIfAbsent(pair.getLinkId(), k -> new ArrayList<>()).add(pair.getChatId());
+        }
+        return result;
+    }
 
     private TrackedLink toModel(LinkEntity entity, long chatId) {
-        var link = new TrackedLink();
-        link.setId(entity.getId());
+        var link = baseLink(entity);
         link.setChatId(chatId);
-        link.setUrl(entity.getUrl());
-        link.setLastChecked(entity.getLastChecked());
-        link.setLastUpdated(entity.getLastUpdated());
         link.setTags(entity.getTags().stream()
                 .filter(t -> t.getChatId().equals(chatId))
                 .map(LinkTagEntity::getTag)
                 .toList());
+        return link;
+    }
+
+    private TrackedLink toLinkOnlyModel(LinkEntity entity) {
+        var link = baseLink(entity);
+        link.setChatId(0);
+        link.setTags(List.of());
+        return link;
+    }
+
+    private TrackedLink baseLink(LinkEntity entity) {
+        var link = new TrackedLink();
+        link.setId(entity.getId());
+        link.setUrl(entity.getUrl());
+        link.setLastChecked(entity.getLastChecked());
+        link.setLastUpdated(entity.getLastUpdated());
         return link;
     }
 

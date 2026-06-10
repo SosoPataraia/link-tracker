@@ -31,6 +31,7 @@ public class BotClientImpl implements BotClient {
                     .log("bot.update.sent");
         } catch (RestClientException e) {
             log.atError().addKeyValue("url", update.getUrl()).log("bot.update.failed", e);
+            throw e;
         }
     }
 }

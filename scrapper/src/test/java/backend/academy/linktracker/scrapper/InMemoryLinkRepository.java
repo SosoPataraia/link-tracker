@@ -1,6 +1,7 @@
-package backend.academy.linktracker.scrapper.repository;
+package backend.academy.linktracker.scrapper;
 
 import backend.academy.linktracker.scrapper.model.TrackedLink;
+import backend.academy.linktracker.scrapper.repository.LinkRepository;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -10,8 +11,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
-public class InMemoryLinkRepository implements LinkRepository {
+class InMemoryLinkRepository implements LinkRepository {
 
     private final Map<Long, TrackedLink> linksById = new ConcurrentHashMap<>();
     private final Map<Long, List<Long>> linksByChatId = new ConcurrentHashMap<>();
@@ -34,8 +36,7 @@ public class InMemoryLinkRepository implements LinkRepository {
 
     @Override
     public Optional<TrackedLink> findByChatAndUrl(long chatId, String url) {
-        List<Long> ids = linksByChatId.getOrDefault(chatId, List.of());
-        return ids.stream()
+        return linksByChatId.getOrDefault(chatId, List.of()).stream()
                 .map(linksById::get)
                 .filter(l -> l != null && l.getUrl().equals(url))
                 .findFirst();
@@ -43,8 +44,10 @@ public class InMemoryLinkRepository implements LinkRepository {
 
     @Override
     public List<TrackedLink> findAllByChat(long chatId) {
-        List<Long> ids = linksByChatId.getOrDefault(chatId, List.of());
-        return ids.stream().map(linksById::get).filter(l -> l != null).toList();
+        return linksByChatId.getOrDefault(chatId, List.of()).stream()
+                .map(linksById::get)
+                .filter(l -> l != null)
+                .toList();
     }
 
     @Override
@@ -55,39 +58,58 @@ public class InMemoryLinkRepository implements LinkRepository {
     @Override
     public boolean remove(long chatId, String url) {
         Optional<TrackedLink> link = findByChatAndUrl(chatId, url);
-        if (link.isEmpty()) return false;
+        if (link.isEmpty()) {
+            return false;
+        }
         long linkId = link.orElseThrow().getId();
         linksById.remove(linkId);
         List<Long> ids = linksByChatId.get(chatId);
-        if (ids != null) ids.remove(linkId);
+        if (ids != null) {
+            ids.remove(linkId);
+        }
         return true;
     }
 
     @Override
     public void removeAllByChat(long chatId) {
         List<Long> ids = linksByChatId.remove(chatId);
-        if (ids != null) ids.forEach(linksById::remove);
-    }
-
-    @Override
-    public void updateLastChecked(long linkId, Instant lastChecked) {
-        TrackedLink link = linksById.get(linkId);
-        if (link != null) {
-            link.setLastChecked(lastChecked);
+        if (ids != null) {
+            ids.forEach(linksById::remove);
         }
     }
 
     @Override
-    public List<TrackedLink> findBatch(int offset, int limit) {
+    public void updateLastChecked(Collection<Long> linkIds, Instant lastChecked) {
+        linkIds.forEach(id -> {
+            TrackedLink link = linksById.get(id);
+            if (link != null) {
+                link.setLastChecked(lastChecked);
+            }
+        });
+    }
+
+    @Override
+    public List<TrackedLink> findLinksToCheck(
+            Instant checkedBefore, Instant cursorLastChecked, long cursorId, int limit) {
+        Instant epoch = Instant.EPOCH;
         return linksById.values().stream()
-                .sorted(Comparator.comparing(
-                        TrackedLink::getLastChecked, Comparator.nullsFirst(Comparator.naturalOrder())))
-                .skip(offset)
+                .filter(l -> {
+                    Instant lc = l.getLastChecked() != null ? l.getLastChecked() : epoch;
+                    return lc.isBefore(checkedBefore)
+                            && (lc.isAfter(cursorLastChecked)
+                                    || (lc.equals(cursorLastChecked) && l.getId() > cursorId));
+                })
+                .sorted(Comparator.comparing((TrackedLink l) -> l.getLastChecked() != null ? l.getLastChecked() : epoch)
+                        .thenComparingLong(TrackedLink::getId))
                 .limit(limit)
                 .toList();
     }
 
-    public boolean existsChat(long chatId) {
-        return linksByChatId.containsKey(chatId);
+    @Override
+    public Map<Long, List<Long>> findChatIdsByLinkIds(Collection<Long> linkIds) {
+        return linkIds.stream()
+                .filter(linksById::containsKey)
+                .collect(Collectors.toMap(
+                        id -> id, id -> List.of(linksById.get(id).getChatId())));
     }
 }

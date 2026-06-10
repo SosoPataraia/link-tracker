@@ -8,9 +8,12 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,11 +54,11 @@ public class SqlLinkRepository implements LinkRepository {
                 .update();
 
         saveTags(linkId, link.getChatId(), link.getTags());
-
         return link;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<TrackedLink> findById(long id) {
         return jdbcClient
                 .sql("""
@@ -71,6 +74,7 @@ public class SqlLinkRepository implements LinkRepository {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<TrackedLink> findByChatAndUrl(long chatId, String url) {
         return jdbcClient
                 .sql("""
@@ -87,6 +91,7 @@ public class SqlLinkRepository implements LinkRepository {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TrackedLink> findAllByChat(long chatId) {
         var links = jdbcClient
                 .sql("""
@@ -102,6 +107,7 @@ public class SqlLinkRepository implements LinkRepository {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Collection<TrackedLink> findAll() {
         var links = jdbcClient.sql("""
                 SELECT l.id, lc.chat_id, l.url, l.last_checked, l.last_updated
@@ -120,7 +126,9 @@ public class SqlLinkRepository implements LinkRepository {
                 .query(Long.class)
                 .optional();
 
-        if (linkId.isEmpty()) return false;
+        if (linkId.isEmpty()) {
+            return false;
+        }
 
         long id = linkId.orElseThrow();
 
@@ -162,7 +170,6 @@ public class SqlLinkRepository implements LinkRepository {
                 .sql("DELETE FROM link_tags WHERE chat_id = :chatId")
                 .param("chatId", chatId)
                 .update();
-
         jdbcClient
                 .sql("DELETE FROM link_chat WHERE chat_id = :chatId")
                 .param("chatId", chatId)
@@ -184,33 +191,66 @@ public class SqlLinkRepository implements LinkRepository {
     }
 
     @Override
-    public void updateLastChecked(long linkId, Instant lastChecked) {
+    @Transactional
+    public void updateLastChecked(Collection<Long> linkIds, Instant lastChecked) {
+        if (linkIds.isEmpty()) {
+            return;
+        }
         jdbcClient
-                .sql("UPDATE links SET last_checked = :lastChecked WHERE id = :id")
+                .sql("UPDATE links SET last_checked = :lastChecked WHERE id IN (:ids)")
                 .param("lastChecked", toTimestamp(lastChecked))
-                .param("id", linkId)
+                .param("ids", linkIds)
                 .update();
     }
 
     @Override
-    public List<TrackedLink> findBatch(int offset, int limit) {
-        var links = jdbcClient
+    @Transactional(readOnly = true)
+    public List<TrackedLink> findLinksToCheck(
+            Instant checkedBefore, Instant cursorLastChecked, long cursorId, int limit) {
+        return jdbcClient
                 .sql("""
-                SELECT l.id, lc.chat_id, l.url, l.last_checked, l.last_updated
+                SELECT l.id, l.url, l.last_checked, l.last_updated
                 FROM links l
-                JOIN link_chat lc ON l.id = lc.link_id
-                ORDER BY l.last_checked ASC NULLS FIRST, l.id ASC
-                LIMIT :limit OFFSET :offset
+                WHERE COALESCE(l.last_checked, :epoch) < :checkedBefore
+                  AND (
+                        COALESCE(l.last_checked, :epoch) > :cursorLastChecked
+                     OR (COALESCE(l.last_checked, :epoch) = :cursorLastChecked AND l.id > :cursorId)
+                  )
+                ORDER BY COALESCE(l.last_checked, :epoch) ASC, l.id ASC
+                LIMIT :limit
                 """)
+                .param("epoch", toTimestamp(Instant.EPOCH))
+                .param("checkedBefore", toTimestamp(checkedBefore))
+                .param("cursorLastChecked", toTimestamp(cursorLastChecked))
+                .param("cursorId", cursorId)
                 .param("limit", limit)
-                .param("offset", offset)
-                .query((rs, rowNum) -> mapRow(rs))
+                .query((rs, rowNum) -> mapLinkRow(rs))
                 .list();
-        return links.stream().map(this::withTags).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, List<Long>> findChatIdsByLinkIds(Collection<Long> linkIds) {
+        if (linkIds.isEmpty()) {
+            return Map.of();
+        }
+        return jdbcClient
+                .sql("SELECT link_id, chat_id FROM link_chat WHERE link_id IN (:ids)")
+                .param("ids", linkIds)
+                .query((ResultSetExtractor<Map<Long, List<Long>>>) rs -> {
+                    Map<Long, List<Long>> map = new HashMap<>();
+                    while (rs.next()) {
+                        map.computeIfAbsent(rs.getLong("link_id"), k -> new ArrayList<>())
+                                .add(rs.getLong("chat_id"));
+                    }
+                    return map;
+                });
     }
 
     private void saveTags(long linkId, long chatId, List<String> tags) {
-        if (tags == null || tags.isEmpty()) return;
+        if (tags == null || tags.isEmpty()) {
+            return;
+        }
         for (String tag : tags) {
             jdbcClient
                     .sql("""
@@ -239,13 +279,25 @@ public class SqlLinkRepository implements LinkRepository {
     }
 
     private TrackedLink mapRow(ResultSet rs) throws SQLException {
+        var link = baseLink(rs);
+        link.setChatId(rs.getLong("chat_id"));
+        link.setTags(new ArrayList<>());
+        return link;
+    }
+
+    private TrackedLink mapLinkRow(ResultSet rs) throws SQLException {
+        var link = baseLink(rs);
+        link.setChatId(0);
+        link.setTags(List.of());
+        return link;
+    }
+
+    private TrackedLink baseLink(ResultSet rs) throws SQLException {
         var link = new TrackedLink();
         link.setId(rs.getLong("id"));
-        link.setChatId(rs.getLong("chat_id"));
         link.setUrl(rs.getString("url"));
         link.setLastChecked(toInstant(rs.getTimestamp("last_checked")));
         link.setLastUpdated(toInstant(rs.getTimestamp("last_updated")));
-        link.setTags(new ArrayList<>());
         return link;
     }
 
