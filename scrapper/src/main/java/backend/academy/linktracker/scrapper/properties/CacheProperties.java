@@ -13,4 +13,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class CacheProperties {
     private Duration ttl = Duration.ofSeconds(60);
     private boolean clientSideEnabled = false;
+    private long maxSize = 10_000;
 }

@@ -1,17 +1,24 @@
 package backend.academy.linktracker.scrapper;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import backend.academy.linktracker.scrapper.controller.GlobalExceptionHandler;
 import backend.academy.linktracker.scrapper.controller.LinksController;
-import backend.academy.linktracker.scrapper.controller.TgChatController;
-import backend.academy.linktracker.scrapper.repository.ChatRepository;
-import backend.academy.linktracker.scrapper.repository.InMemoryChatRepository;
-import backend.academy.linktracker.scrapper.repository.InMemoryLinkRepository;
+import backend.academy.linktracker.scrapper.dto.LinkResponse;
+import backend.academy.linktracker.scrapper.dto.ListLinksResponse;
+import backend.academy.linktracker.scrapper.exception.ChatNotFoundException;
+import backend.academy.linktracker.scrapper.exception.LinkAlreadyExistsException;
+import backend.academy.linktracker.scrapper.exception.LinkNotFoundException;
 import backend.academy.linktracker.scrapper.service.LinkApiService;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
@@ -21,34 +28,23 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 class LinksControllerTest {
 
     MockMvc mockMvc;
-    ChatRepository chatRepository;
-    InMemoryLinkRepository linkRepository;
+    LinkApiService linkApiService;
 
     @BeforeEach
     void setUp() {
-        chatRepository = new InMemoryChatRepository();
-        linkRepository = new InMemoryLinkRepository();
-        var linkApiService = new LinkApiService(linkRepository, chatRepository);
-
-        var linksController = new LinksController(linkApiService, linkRepository);
-        var chatController = new TgChatController(chatRepository, linkRepository);
-
-        mockMvc = MockMvcBuilders.standaloneSetup(linksController, chatController)
+        linkApiService = mock(LinkApiService.class);
+        var controller = new LinksController(linkApiService);
+        mockMvc = MockMvcBuilders.standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter())
                 .build();
     }
 
-    // Scenario 3.1
     @Test
-    void addAndGetLink() throws Exception {
-        mockMvc.perform(post("/tg-chat/1")).andExpect(status().isOk());
-
-        mockMvc.perform(post("/links")
-                        .header("Tg-Chat-Id", 1)
-                        .contentType("application/json")
-                        .content("{\"link\":\"https://github.com/user/repo\",\"tags\":[\"work\"]}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.url").value("https://github.com/user/repo"));
+    void getLinks_returnsList() throws Exception {
+        when(linkApiService.getLinks(1L))
+                .thenReturn(new ListLinksResponse(
+                        List.of(new LinkResponse(1L, "https://github.com/user/repo", List.of())), 1));
 
         mockMvc.perform(get("/links").header("Tg-Chat-Id", 1))
                 .andExpect(status().isOk())
@@ -56,78 +52,72 @@ class LinksControllerTest {
                 .andExpect(jsonPath("$.size").value(1));
     }
 
-    // Scenario 3.2
     @Test
-    void addAndDeleteLink() throws Exception {
-        mockMvc.perform(post("/tg-chat/1")).andExpect(status().isOk());
+    void addLink_returns200() throws Exception {
+        when(linkApiService.addLink(eq(1L), any()))
+                .thenReturn(new LinkResponse(1L, "https://github.com/user/repo", List.of()));
 
         mockMvc.perform(post("/links")
                         .header("Tg-Chat-Id", 1)
                         .contentType("application/json")
                         .content("{\"link\":\"https://github.com/user/repo\"}"))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(delete("/links")
-                        .header("Tg-Chat-Id", 1)
-                        .contentType("application/json")
-                        .content("{\"link\":\"https://github.com/user/repo\"}"))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(get("/links").header("Tg-Chat-Id", 1))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.size").value(0));
+                .andExpect(jsonPath("$.url").value("https://github.com/user/repo"));
     }
 
-    // Scenario 3.3
     @Test
-    void deleteFromNonExistentChat_returnsError() throws Exception {
-        mockMvc.perform(post("/tg-chat/1")).andExpect(status().isOk());
-
-        mockMvc.perform(post("/links")
-                        .header("Tg-Chat-Id", 1)
-                        .contentType("application/json")
-                        .content("{\"link\":\"https://github.com/user/repo\"}"))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(delete("/links")
-                        .header("Tg-Chat-Id", 999)
-                        .contentType("application/json")
-                        .content("{\"link\":\"https://github.com/user/repo\"}"))
-                .andExpect(status().is4xxClientError());
-
-        mockMvc.perform(get("/links").header("Tg-Chat-Id", 1))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.size").value(1));
-    }
-
-    // Scenario 3.4
-    @Test
-    void addLinkToNonExistentChat_returnsError() throws Exception {
-        mockMvc.perform(post("/tg-chat/1")).andExpect(status().isOk());
+    void addLink_chatNotFound_returns400() throws Exception {
+        when(linkApiService.addLink(eq(2L), any())).thenThrow(new ChatNotFoundException(2L));
 
         mockMvc.perform(post("/links")
                         .header("Tg-Chat-Id", 2)
                         .contentType("application/json")
                         .content("{\"link\":\"https://github.com/user/repo\"}"))
-                .andExpect(status().is4xxClientError());
+                .andExpect(status().isBadRequest());
     }
 
-    // Scenario 3.5
     @Test
-    void workWithDeletedChat_returnsError() throws Exception {
-        mockMvc.perform(post("/tg-chat/1")).andExpect(status().isOk());
-        mockMvc.perform(delete("/tg-chat/1")).andExpect(status().isOk());
+    void addLink_duplicate_returns409() throws Exception {
+        when(linkApiService.addLink(eq(1L), any()))
+                .thenThrow(new LinkAlreadyExistsException(1L, "https://github.com/user/repo"));
 
         mockMvc.perform(post("/links")
                         .header("Tg-Chat-Id", 1)
                         .contentType("application/json")
                         .content("{\"link\":\"https://github.com/user/repo\"}"))
-                .andExpect(status().is4xxClientError());
+                .andExpect(status().isConflict());
     }
 
-    // Scenario 3.6
     @Test
-    void deleteNonExistentChat_returns404() throws Exception {
-        mockMvc.perform(delete("/tg-chat/1")).andExpect(status().isNotFound());
+    void addLink_invalidBody_returns400() throws Exception {
+        mockMvc.perform(post("/links")
+                        .header("Tg-Chat-Id", 1)
+                        .contentType("application/json")
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void removeLink_returns200() throws Exception {
+        when(linkApiService.removeLink(eq(1L), any()))
+                .thenReturn(new LinkResponse(1L, "https://github.com/user/repo", List.of()));
+
+        mockMvc.perform(delete("/links")
+                        .header("Tg-Chat-Id", 1)
+                        .contentType("application/json")
+                        .content("{\"link\":\"https://github.com/user/repo\"}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void removeLink_notFound_returns404() throws Exception {
+        when(linkApiService.removeLink(eq(1L), any()))
+                .thenThrow(new LinkNotFoundException(1L, "https://github.com/user/repo"));
+
+        mockMvc.perform(delete("/links")
+                        .header("Tg-Chat-Id", 1)
+                        .contentType("application/json")
+                        .content("{\"link\":\"https://github.com/user/repo\"}"))
+                .andExpect(status().isNotFound());
     }
 }

@@ -170,40 +170,22 @@ services:
     container_name: valkey
     ports:
       - "6379:6379"
+    command: ["valkey-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     volumes:
       - valkey-data:/data
     networks:
       - backend
-
-  valkey-replica-1:
-    image: valkey/valkey:8-alpine
-    container_name: valkey-replica-1
-    command: valkey-server --replicaof valkey 6379
-    volumes:
-      - valkey-replica-1-data:/data
-    networks:
-      - backend
-    depends_on:
-      - valkey
-
-  valkey-replica-2:
-    image: valkey/valkey:8-alpine
-    container_name: valkey-replica-2
-    command: valkey-server --replicaof valkey 6379
-    volumes:
-      - valkey-replica-2-data:/data
-    networks:
-      - backend
-    depends_on:
-      - valkey
 
 volumes:
   kafka-1-data:
   kafka-2-data:
   kafka-3-data:
   valkey-data:
-  valkey-replica-1-data:
-  valkey-replica-2-data:
 
 networks:
   backend:

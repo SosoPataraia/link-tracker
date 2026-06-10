@@ -2,93 +2,69 @@ package backend.academy.linktracker.scrapper.cache;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import backend.academy.linktracker.scrapper.TestcontainersConfiguration;
-import backend.academy.linktracker.scrapper.dto.AddLinkRequest;
-import backend.academy.linktracker.scrapper.dto.RemoveLinkRequest;
-import backend.academy.linktracker.scrapper.repository.ChatRepository;
-import backend.academy.linktracker.scrapper.repository.LinkRepository;
-import backend.academy.linktracker.scrapper.service.LinkApiService;
-import com.redis.testcontainers.RedisContainer;
+import backend.academy.linktracker.scrapper.dto.LinkResponse;
+import backend.academy.linktracker.scrapper.dto.ListLinksResponse;
+import backend.academy.linktracker.scrapper.properties.CacheProperties;
+import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cache.CacheManager;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@SpringBootTest
-@Testcontainers
-@Import(TestcontainersConfiguration.class)
-@org.junit.jupiter.api.Disabled("Runs locally; excluded from CI due to 10-minute job timeout")
-class LinkCacheIntegrationTest {
+class LocalLinksCacheTest {
 
-    @Container
-    static RedisContainer redis = new RedisContainer("valkey/valkey:8-alpine");
-
-    @DynamicPropertySource
-    static void redisProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.data.redis.host", redis::getHost);
-        registry.add("spring.data.redis.port", () -> redis.getMappedPort(6379));
-    }
-
-    @Autowired
-    LinkApiService linkApiService;
-
-    @Autowired
-    ChatRepository chatRepository;
-
-    @Autowired
-    LinkRepository linkRepository;
-
-    @Autowired
-    CacheManager cacheManager;
-
-    private static final AtomicLong chatIdSeq = new AtomicLong(99000000);
-    private long chatId;
+    CaffeineLocalLinksCache cache;
 
     @BeforeEach
     void setUp() {
-        chatId = chatIdSeq.incrementAndGet();
-        chatRepository.register(chatId);
-        cacheManager.getCache("links").clear();
+        CacheProperties props = new CacheProperties();
+        props.setTtl(Duration.ofSeconds(60));
+        props.setMaxSize(1000);
+        cache = new CaffeineLocalLinksCache(props);
     }
 
     @Test
-    void getLinks_cacheReturnsSameResult() {
-        var first = linkApiService.getLinks(chatId);
-        assertThat(first).isPresent();
-
-        var second = linkApiService.getLinks(chatId);
-        assertThat(second).isPresent();
-        assertThat(second.get().getSize()).isEqualTo(first.get().getSize());
+    void get_miss_returnsEmpty() {
+        assertThat(cache.get(1L)).isEmpty();
     }
 
     @Test
-    void addLink_cacheEvictedAndReflectsNewData() {
-        assertThat(linkApiService.getLinks(chatId).get().getSize()).isEqualTo(0);
+    void put_thenGet_returnsValue() {
+        var response = new ListLinksResponse(List.of(new LinkResponse(1L, "https://github.com/u/r", List.of())), 1);
 
-        linkApiService.addLink(
-                chatId, new AddLinkRequest("https://stackoverflow.com/questions/123", List.of(), List.of()));
+        cache.put(1L, response);
 
-        assertThat(linkApiService.getLinks(chatId).get().getSize()).isEqualTo(1);
+        assertThat(cache.get(1L)).isPresent();
+        assertThat(cache.get(1L).get()).usingRecursiveComparison().isEqualTo(response);
     }
 
     @Test
-    void removeLink_cacheEvictedAndReflectsRemoval() {
-        linkApiService.addLink(chatId, new AddLinkRequest("https://github.com/test/repo", List.of(), List.of()));
+    void evict_removesEntry() {
+        cache.put(1L, new ListLinksResponse(List.of(), 0));
+        cache.evict(1L);
+        assertThat(cache.get(1L)).isEmpty();
+    }
 
-        assertThat(linkApiService.getLinks(chatId).get().getSize()).isEqualTo(1);
+    @Test
+    void evict_nonExistent_doesNotThrow() {
+        cache.evict(999L);
+    }
 
-        assertThat(linkApiService.getLinks(chatId).get().getSize()).isEqualTo(1);
+    @Test
+    void maxSize_respected() {
+        CacheProperties props = new CacheProperties();
+        props.setTtl(Duration.ofSeconds(60));
+        props.setMaxSize(2);
+        var smallCache = new CaffeineLocalLinksCache(props);
 
-        linkApiService.removeLink(chatId, new RemoveLinkRequest("https://github.com/test/repo"));
+        smallCache.put(1L, new ListLinksResponse(List.of(), 0));
+        smallCache.put(2L, new ListLinksResponse(List.of(), 0));
+        smallCache.put(3L, new ListLinksResponse(List.of(), 0));
 
-        assertThat(linkApiService.getLinks(chatId).get().getSize()).isEqualTo(0);
+        smallCache.cleanUp();
+
+        long present = List.of(1L, 2L, 3L).stream()
+                .filter(id -> smallCache.get(id).isPresent())
+                .count();
+        assertThat(present).isLessThanOrEqualTo(2);
     }
 }
