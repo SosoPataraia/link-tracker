@@ -10,4 +10,6 @@ public interface OutboxRepository {
     void markProcessed(long id);
 
     void markFailed(long id);
+
+    List<OutboxEvent> claimPending(int limit);
 }

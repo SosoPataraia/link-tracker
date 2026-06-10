@@ -21,6 +21,8 @@ public class KafkaLinkUpdateConsumer {
             groupId = "${spring.kafka.consumer.group-id:bot-group}",
             containerFactory = "kafkaListenerContainerFactory")
     public void consume(LinkUpdateEvent event) {
+        validate(event);
+
         log.atInfo()
                 .addKeyValue("url", event.getUrl())
                 .addKeyValue("chatIds", event.getTgChatIds())
@@ -32,5 +34,17 @@ public class KafkaLinkUpdateConsumer {
                 event.getDescription() != null ? event.getDescription().toString() : null,
                 new ArrayList<>(event.getTgChatIds()));
         notificationHandler.handleUpdate(update);
+    }
+
+    private void validate(LinkUpdateEvent event) {
+        if (event == null) {
+            throw new ValidationException("Event is null");
+        }
+        if (event.getUrl() == null || event.getUrl().toString().isBlank()) {
+            throw new ValidationException("Event url is null or blank");
+        }
+        if (event.getTgChatIds() == null || event.getTgChatIds().isEmpty()) {
+            throw new ValidationException("Event tgChatIds is null or empty");
+        }
     }
 }

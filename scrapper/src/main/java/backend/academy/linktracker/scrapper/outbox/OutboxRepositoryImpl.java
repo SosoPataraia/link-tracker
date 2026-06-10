@@ -8,6 +8,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @RequiredArgsConstructor
@@ -27,6 +28,27 @@ public class OutboxRepositoryImpl implements OutboxRepository {
                 .param("payload", event.getPayload())
                 .param("status", OutboxEvent.OutboxStatus.PENDING.name())
                 .update();
+    }
+
+    @Override
+    @Transactional
+    public List<OutboxEvent> claimPending(int limit) {
+        return jdbcClient
+                .sql("""
+                UPDATE outbox_events
+                SET status = 'PROCESSING'
+                WHERE id IN (
+                    SELECT id FROM outbox_events
+                    WHERE status = 'PENDING'
+                    ORDER BY created_at ASC
+                    LIMIT :limit
+                    FOR UPDATE SKIP LOCKED
+                )
+                RETURNING id, topic, key, payload, status, created_at, processed_at
+                """)
+                .param("limit", limit)
+                .query((rs, rowNum) -> mapRow(rs))
+                .list();
     }
 
     @Override

@@ -20,6 +20,7 @@ public class OutboxEvent {
 
     public enum OutboxStatus {
         PENDING,
+        PROCESSING,
         PROCESSED,
         FAILED
     }

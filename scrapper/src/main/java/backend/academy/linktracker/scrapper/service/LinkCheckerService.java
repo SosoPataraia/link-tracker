@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -73,6 +74,12 @@ public class LinkCheckerService {
             return;
         }
 
+        publishAndUpdateLastChecked(url, subscribers, updates);
+    }
+
+    @Transactional
+    public void publishAndUpdateLastChecked(
+            String url, List<TrackedLink> subscribers, List<UpdateDescription> updates) {
         if (!updates.isEmpty()) {
             List<Long> chatIds =
                     subscribers.stream().map(TrackedLink::getChatId).distinct().toList();
@@ -81,7 +88,11 @@ public class LinkCheckerService {
             for (UpdateDescription desc : updates) {
                 var linkUpdate = new LinkUpdate(representativeLinkId, url, desc.format(url), chatIds);
                 notificationSender.send(linkUpdate);
-                log.info("Sent update type={} url={} chatIds={}", desc.getType(), url, chatIds);
+                log.atInfo()
+                        .addKeyValue("type", desc.getType())
+                        .addKeyValue("url", url)
+                        .addKeyValue("chatIds", chatIds)
+                        .log("update.sent");
             }
         }
 

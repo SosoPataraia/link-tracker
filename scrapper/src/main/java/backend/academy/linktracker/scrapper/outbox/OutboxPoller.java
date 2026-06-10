@@ -4,16 +4,22 @@ import backend.academy.linktracker.avro.LinkUpdateEvent;
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "app.notification.transport", havingValue = "outbox")
 @RequiredArgsConstructor
 public class OutboxPoller {
+
+    private static final long SEND_TIMEOUT_SECONDS = 10;
 
     private final OutboxRepository outboxRepository;
     private final KafkaTemplate<String, LinkUpdateEvent> avroKafkaTemplate;
@@ -21,10 +27,10 @@ public class OutboxPoller {
 
     @Scheduled(fixedDelayString = "${app.outbox.poll-interval-ms:1000}")
     public void poll() {
-        List<OutboxEvent> pending = outboxRepository.findPending(100);
+        List<OutboxEvent> pending = outboxRepository.claimPending(100);
         if (pending.isEmpty()) return;
 
-        log.debug("Polling outbox: found {} pending events", pending.size());
+        log.atDebug().addKeyValue("count", pending.size()).log("outbox.poll.found");
 
         for (OutboxEvent event : pending) {
             try {
@@ -39,11 +45,32 @@ public class OutboxPoller {
 
                 avroKafkaTemplate
                         .send(event.getTopic(), event.getKey(), avroEvent)
-                        .get();
+                        .get(SEND_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
                 outboxRepository.markProcessed(event.getId());
-                log.info("Outbox event processed: id={} url={}", event.getId(), update.getUrl());
+                log.atInfo()
+                        .addKeyValue("id", event.getId())
+                        .addKeyValue("url", update.getUrl())
+                        .log("outbox.event.processed");
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.atError()
+                        .addKeyValue("id", event.getId())
+                        .addKeyValue("error", e.getMessage())
+                        .log("outbox.event.interrupted");
+                outboxRepository.markFailed(event.getId());
+            } catch (TimeoutException e) {
+                log.atError()
+                        .addKeyValue("id", event.getId())
+                        .addKeyValue("error", e.getMessage())
+                        .log("outbox.event.timeout");
+                outboxRepository.markFailed(event.getId());
             } catch (Exception e) {
-                log.error("Failed to process outbox event id={}: {}", event.getId(), e.getMessage());
+                log.atError()
+                        .addKeyValue("id", event.getId())
+                        .addKeyValue("error", e.getMessage())
+                        .log("outbox.event.failed");
                 outboxRepository.markFailed(event.getId());
             }
         }

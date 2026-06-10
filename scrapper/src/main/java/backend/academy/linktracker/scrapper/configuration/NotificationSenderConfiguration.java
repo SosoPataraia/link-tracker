@@ -29,9 +29,6 @@ public class NotificationSenderConfiguration {
     @Value("${app.kafka.topic.link-updates:link-updates}")
     private String linkUpdatesTopic;
 
-    @Value("${app.kafka.topic.link-updates-dlt:link-updates.DLT}")
-    private String linkUpdatesDltTopic;
-
     @Value("${spring.kafka.bootstrap-servers:localhost:29092}")
     private String bootstrapServers;
 
@@ -50,17 +47,6 @@ public class NotificationSenderConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(name = "app.notification.transport", havingValue = "kafka", matchIfMissing = true)
-    public NewTopic linkUpdatesDltTopic() {
-        return TopicBuilder.name(linkUpdatesDltTopic)
-                .partitions(3)
-                .replicas(3)
-                .config("retention.ms", "2592000000")
-                .build();
-    }
-
-    @Bean
-    @ConditionalOnProperty(name = "app.notification.transport", havingValue = "kafka", matchIfMissing = true)
     public ProducerFactory<String, LinkUpdateEvent> avroProducerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
@@ -71,7 +57,6 @@ public class NotificationSenderConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(name = "app.notification.transport", havingValue = "kafka", matchIfMissing = true)
     public KafkaTemplate<String, LinkUpdateEvent> avroKafkaTemplate(
             ProducerFactory<String, LinkUpdateEvent> avroProducerFactory) {
         return new KafkaTemplate<>(avroProducerFactory);

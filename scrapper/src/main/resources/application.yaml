@@ -18,12 +18,6 @@ spring:
     open-in-view: false
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
-      properties:
-        spring.json.type.mapping: linkUpdate:backend.academy.linktracker.scrapper.dto.LinkUpdate
-    schema-registry-url: ${SCHEMA_REGISTRY_URL:http://localhost:8085}
 
 app:
   stackoverflow:
@@ -35,15 +29,16 @@ app:
     base-url: ${BOT_BASE_URL:http://localhost:8080}
   scheduler:
     interval: 60000
-    batch-size: 100  # 50–500 per NFR
-    thread-count: 4  # parallel threads per batch (bonus NFR)
+    batch-size: 100
+    thread-count: 4
   database:
     access-type: SQL
   notification:
-    transport: kafka  # or 'http' for synchronous mode
-    kafka:
-      topic:
-        link-updates: link-updates
-        link-updates-dlt: link-updates.DLT
+    transport: kafka
+  kafka:
+    schema-registry-url: ${SCHEMA_REGISTRY_URL:http://localhost:8085}
+    topic:
+      link-updates: link-updates
+      link-updates-dlt: link-updates.DLT
   outbox:
     poll-interval-ms: 1000

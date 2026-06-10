@@ -34,6 +34,7 @@ public class BotClientImpl implements BotClient {
                     .addKeyValue("url", update.getUrl())
                     .addKeyValue("error", e.getMessage())
                     .log("bot.update.failed");
+            throw e;
         }
     }
 }

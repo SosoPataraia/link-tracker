@@ -12,4 +12,5 @@ CREATE TABLE outbox_events
     processed_at TIMESTAMPTZ
 );
 
-CREATE INDEX idx_outbox_status ON outbox_events (status);
+CREATE INDEX idx_outbox_pending ON outbox_events (created_at)
+    WHERE status = 'PENDING';
