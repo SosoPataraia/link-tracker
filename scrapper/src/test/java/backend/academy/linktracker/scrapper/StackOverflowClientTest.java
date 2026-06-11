@@ -5,6 +5,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import backend.academy.linktracker.scrapper.client.StackOverflowClientImpl;
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 import org.wiremock.spring.EnableWireMock;
 import org.wiremock.spring.InjectWireMock;
 
@@ -53,8 +55,7 @@ class StackOverflowClientTest {
         stubFor(get(urlPathEqualTo("/questions/999")).willReturn(aResponse().withStatus(503)));
         var client = new StackOverflowClientImpl(
                 RestClient.builder().baseUrl(wireMock.baseUrl()).build());
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> client.getLastActivity(999L))
-                .isInstanceOf(org.springframework.web.client.RestClientException.class);
+        assertThatThrownBy(() -> client.getLastActivity(999L)).isInstanceOf(RestClientException.class);
     }
 
     @Test

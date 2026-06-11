@@ -1,10 +1,12 @@
 package backend.academy.linktracker.scrapper.resilience;
 
 import backend.academy.linktracker.scrapper.properties.ResilienceProperties;
+import java.io.IOException;
 import java.util.function.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.ResourceAccessException;
 
 @Component
 @RequiredArgsConstructor
@@ -18,7 +20,6 @@ public class RetryableStatusPredicate implements Predicate<Throwable> {
             int status = ex.getStatusCode().value();
             return resilienceProperties.getRetryableStatusCodes().contains(status);
         }
-        return throwable instanceof java.io.IOException
-                || throwable instanceof org.springframework.web.client.ResourceAccessException;
+        return throwable instanceof IOException || throwable instanceof ResourceAccessException;
     }
 }

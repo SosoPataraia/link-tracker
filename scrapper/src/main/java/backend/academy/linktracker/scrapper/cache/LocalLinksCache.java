@@ -21,11 +21,11 @@ public class LocalLinksCache {
 
     public void evict(long chatId) {
         store.remove(chatId);
-        log.debug("L1 cache evicted for chatId={}", chatId);
+        log.atDebug().addKeyValue("chatId", chatId).log("cache.l1.evicted");
     }
 
     public void evictAll() {
         store.clear();
-        log.debug("L1 cache cleared");
+        log.atDebug().log("cache.l1.cleared");
     }
 }

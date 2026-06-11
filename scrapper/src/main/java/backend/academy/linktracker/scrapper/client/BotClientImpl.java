@@ -1,6 +1,7 @@
 package backend.academy.linktracker.scrapper.client;
 
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -13,9 +14,12 @@ import org.springframework.web.client.RestClientException;
 @RequiredArgsConstructor
 public class BotClientImpl implements BotClient {
 
+    private static final String BOT_CLIENT_NAME = "botClient";
+
     private final RestClient botRestClient;
 
     @Override
+    @Retry(name = BOT_CLIENT_NAME)
     public void sendUpdate(LinkUpdate update) {
         try {
             botRestClient
@@ -34,6 +38,7 @@ public class BotClientImpl implements BotClient {
                     .addKeyValue("url", update.getUrl())
                     .addKeyValue("error", e.getMessage())
                     .log("bot.update.failed");
+            throw e;
         }
     }
 }

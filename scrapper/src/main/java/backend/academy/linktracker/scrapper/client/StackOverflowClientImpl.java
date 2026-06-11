@@ -22,13 +22,13 @@ import org.springframework.web.client.RestClientException;
 @RequiredArgsConstructor
 public class StackOverflowClientImpl implements StackOverflowClient {
 
-    private static final String CIRCUIT_BREAKER_NAME = "stackOverflowClient";
+    private static final String STACKOVERFLOW_CLIENT_NAME = "stackOverflowClient";
 
     private final RestClient stackOverflowRestClient;
 
     @Override
-    @Retry(name = CIRCUIT_BREAKER_NAME)
-    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME)
+    @Retry(name = STACKOVERFLOW_CLIENT_NAME)
+    @CircuitBreaker(name = STACKOVERFLOW_CLIENT_NAME)
     public Instant getLastActivity(long questionId) {
         try {
             var response = stackOverflowRestClient
@@ -48,19 +48,14 @@ public class StackOverflowClientImpl implements StackOverflowClient {
             log.atError()
                     .addKeyValue("questionId", questionId)
                     .addKeyValue("error", e.getMessage())
-<<<<<<< HEAD
                     .log("stackoverflow.getLastActivity.failed");
             throw e;
-=======
-                    .log("stackoverflow.activity.fetch.failed");
-            return null;
->>>>>>> 8298d9d (refactor: apply structured logging, @Data DTOs, TelegramBotAdapter, Dead code cleanup, unused config)
         }
     }
 
     @Override
-    @Retry(name = CIRCUIT_BREAKER_NAME)
-    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME)
+    @Retry(name = STACKOVERFLOW_CLIENT_NAME)
+    @CircuitBreaker(name = STACKOVERFLOW_CLIENT_NAME)
     public Optional<QuestionItem> getQuestion(long questionId) {
         try {
             var response = stackOverflowRestClient
@@ -78,19 +73,14 @@ public class StackOverflowClientImpl implements StackOverflowClient {
             log.atError()
                     .addKeyValue("questionId", questionId)
                     .addKeyValue("error", e.getMessage())
-<<<<<<< HEAD
                     .log("stackoverflow.getQuestion.failed");
             throw e;
-=======
-                    .log("stackoverflow.question.fetch.failed");
-            return Optional.empty();
->>>>>>> 8298d9d (refactor: apply structured logging, @Data DTOs, TelegramBotAdapter, Dead code cleanup, unused config)
         }
     }
 
     @Override
-    @Retry(name = CIRCUIT_BREAKER_NAME)
-    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME)
+    @Retry(name = STACKOVERFLOW_CLIENT_NAME)
+    @CircuitBreaker(name = STACKOVERFLOW_CLIENT_NAME)
     public List<AnswerItem> getNewAnswers(long questionId, Instant since) {
         try {
             long sinceEpoch = since.getEpochSecond();
@@ -113,19 +103,14 @@ public class StackOverflowClientImpl implements StackOverflowClient {
             log.atError()
                     .addKeyValue("questionId", questionId)
                     .addKeyValue("error", e.getMessage())
-<<<<<<< HEAD
                     .log("stackoverflow.getNewAnswers.failed");
             throw e;
-=======
-                    .log("stackoverflow.answers.fetch.failed");
-            return List.of();
->>>>>>> 8298d9d (refactor: apply structured logging, @Data DTOs, TelegramBotAdapter, Dead code cleanup, unused config)
         }
     }
 
     @Override
-    @Retry(name = CIRCUIT_BREAKER_NAME)
-    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME)
+    @Retry(name = STACKOVERFLOW_CLIENT_NAME)
+    @CircuitBreaker(name = STACKOVERFLOW_CLIENT_NAME)
     public List<CommentItem> getNewComments(long questionId, Instant since) {
         try {
             long sinceEpoch = since.getEpochSecond();
@@ -148,13 +133,8 @@ public class StackOverflowClientImpl implements StackOverflowClient {
             log.atError()
                     .addKeyValue("questionId", questionId)
                     .addKeyValue("error", e.getMessage())
-<<<<<<< HEAD
                     .log("stackoverflow.getNewComments.failed");
             throw e;
-=======
-                    .log("stackoverflow.comments.fetch.failed");
-            return List.of();
->>>>>>> 8298d9d (refactor: apply structured logging, @Data DTOs, TelegramBotAdapter, Dead code cleanup, unused config)
         }
     }
 }

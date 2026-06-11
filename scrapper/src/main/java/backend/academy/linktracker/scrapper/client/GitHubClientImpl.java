@@ -18,13 +18,13 @@ import org.springframework.web.client.RestClientException;
 @RequiredArgsConstructor
 public class GitHubClientImpl implements GitHubClient {
 
-    private static final String CIRCUIT_BREAKER_NAME = "githubClient";
+    private static final String GITHUB_CLIENT_NAME = "githubClient";
 
     private final RestClient gitHubRestClient;
 
     @Override
-    @Retry(name = CIRCUIT_BREAKER_NAME)
-    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME)
+    @Retry(name = GITHUB_CLIENT_NAME)
+    @CircuitBreaker(name = GITHUB_CLIENT_NAME)
     public Instant getLastUpdated(String owner, String repo) {
         try {
             var response = gitHubRestClient
@@ -38,19 +38,14 @@ public class GitHubClientImpl implements GitHubClient {
                     .addKeyValue("owner", owner)
                     .addKeyValue("repo", repo)
                     .addKeyValue("error", e.getMessage())
-<<<<<<< HEAD
                     .log("github.getLastUpdated.failed");
             throw e;
-=======
-                    .log("github.repo.fetch.failed");
-            return null;
->>>>>>> 8298d9d (refactor: apply structured logging, @Data DTOs, TelegramBotAdapter, Dead code cleanup, unused config)
         }
     }
 
     @Override
-    @Retry(name = CIRCUIT_BREAKER_NAME)
-    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME)
+    @Retry(name = GITHUB_CLIENT_NAME)
+    @CircuitBreaker(name = GITHUB_CLIENT_NAME)
     public List<IssueItem> getNewIssues(String owner, String repo, Instant since) {
         try {
             List<IssueItem> items = gitHubRestClient
@@ -72,19 +67,14 @@ public class GitHubClientImpl implements GitHubClient {
                     .addKeyValue("owner", owner)
                     .addKeyValue("repo", repo)
                     .addKeyValue("error", e.getMessage())
-<<<<<<< HEAD
                     .log("github.getNewIssues.failed");
             throw e;
-=======
-                    .log("github.issues.fetch.failed");
-            return List.of();
->>>>>>> 8298d9d (refactor: apply structured logging, @Data DTOs, TelegramBotAdapter, Dead code cleanup, unused config)
         }
     }
 
     @Override
-    @Retry(name = CIRCUIT_BREAKER_NAME)
-    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME)
+    @Retry(name = GITHUB_CLIENT_NAME)
+    @CircuitBreaker(name = GITHUB_CLIENT_NAME)
     public List<IssueItem> getNewPullRequests(String owner, String repo, Instant since) {
         try {
             List<IssueItem> items = gitHubRestClient
@@ -107,13 +97,8 @@ public class GitHubClientImpl implements GitHubClient {
                     .addKeyValue("owner", owner)
                     .addKeyValue("repo", repo)
                     .addKeyValue("error", e.getMessage())
-<<<<<<< HEAD
                     .log("github.getNewPullRequests.failed");
             throw e;
-=======
-                    .log("github.pulls.fetch.failed");
-            return List.of();
->>>>>>> 8298d9d (refactor: apply structured logging, @Data DTOs, TelegramBotAdapter, Dead code cleanup, unused config)
         }
     }
 }

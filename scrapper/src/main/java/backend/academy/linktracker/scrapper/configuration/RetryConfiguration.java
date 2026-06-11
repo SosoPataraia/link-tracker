@@ -17,4 +17,9 @@ public class RetryConfiguration {
     public RetryConfigCustomizer stackOverflowRetryCustomizer(RetryableStatusPredicate predicate) {
         return RetryConfigCustomizer.of("stackOverflowClient", builder -> builder.retryOnException(predicate));
     }
+
+    @Bean
+    public RetryConfigCustomizer botRetryCustomizer(RetryableStatusPredicate predicate) {
+        return RetryConfigCustomizer.of("botClient", builder -> builder.retryOnException(predicate));
+    }
 }

@@ -9,7 +9,7 @@ import backend.academy.linktracker.scrapper.controller.LinksController;
 import backend.academy.linktracker.scrapper.properties.RateLimitProperties;
 import backend.academy.linktracker.scrapper.ratelimit.RateLimitFilter;
 import backend.academy.linktracker.scrapper.repository.LinkRepository;
-import backend.academy.linktracker.scrapper.service.LinkApiService;
+import backend.academy.linktracker.scrapper.service.LinkApiServiceImpl;
 import java.time.Duration;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,7 +20,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 class RateLimitFilterTest {
 
     MockMvc mockMvc;
-    LinkApiService linkApiService;
+    LinkApiServiceImpl linkApiService;
 
     @BeforeEach
     void setUp() {
@@ -31,7 +31,7 @@ class RateLimitFilterTest {
 
         var filter = new RateLimitFilter(props);
 
-        linkApiService = mock(LinkApiService.class);
+        linkApiService = mock(LinkApiServiceImpl.class);
         LinkRepository linkRepository = mock(LinkRepository.class);
 
         var controller = new LinksController(linkApiService, linkRepository);
@@ -55,5 +55,29 @@ class RateLimitFilterTest {
         }
 
         mockMvc.perform(get("/links").header("Tg-Chat-Id", "1")).andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    void requestsFromDifferentIps_haveIndependentBuckets() throws Exception {
+        when(linkApiService.getLinks(1L)).thenReturn(Optional.empty());
+
+        for (int i = 0; i < 3; i++) {
+            mockMvc.perform(get("/links").header("Tg-Chat-Id", "1").with(request -> {
+                request.setRemoteAddr("192.168.1.1");
+                return request;
+            }));
+        }
+
+        mockMvc.perform(get("/links").header("Tg-Chat-Id", "1").with(request -> {
+                    request.setRemoteAddr("192.168.1.1");
+                    return request;
+                }))
+                .andExpect(status().isTooManyRequests());
+
+        mockMvc.perform(get("/links").header("Tg-Chat-Id", "1").with(request -> {
+                    request.setRemoteAddr("192.168.1.2");
+                    return request;
+                }))
+                .andExpect(status().is(org.hamcrest.Matchers.not(429)));
     }
 }

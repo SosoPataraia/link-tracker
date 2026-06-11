@@ -6,12 +6,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import backend.academy.linktracker.scrapper.controller.GlobalExceptionHandler;
 import backend.academy.linktracker.scrapper.controller.LinksController;
 import backend.academy.linktracker.scrapper.controller.TgChatController;
 import backend.academy.linktracker.scrapper.repository.ChatRepository;
 import backend.academy.linktracker.scrapper.repository.InMemoryChatRepository;
 import backend.academy.linktracker.scrapper.repository.InMemoryLinkRepository;
-import backend.academy.linktracker.scrapper.service.LinkApiService;
+import backend.academy.linktracker.scrapper.service.LinkApiServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
@@ -28,12 +29,13 @@ class LinksControllerTest {
     void setUp() {
         chatRepository = new InMemoryChatRepository();
         linkRepository = new InMemoryLinkRepository();
-        var linkApiService = new LinkApiService(linkRepository, chatRepository);
+        var linkApiService = new LinkApiServiceImpl(linkRepository, chatRepository);
 
         var linksController = new LinksController(linkApiService, linkRepository);
         var chatController = new TgChatController(chatRepository, linkRepository);
 
         mockMvc = MockMvcBuilders.standaloneSetup(linksController, chatController)
+                .setControllerAdvice(new GlobalExceptionHandler())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter())
                 .build();
     }

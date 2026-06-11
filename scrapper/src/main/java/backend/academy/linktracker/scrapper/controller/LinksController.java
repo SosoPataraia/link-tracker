@@ -4,6 +4,7 @@ import backend.academy.linktracker.scrapper.dto.AddLinkRequest;
 import backend.academy.linktracker.scrapper.dto.LinkResponse;
 import backend.academy.linktracker.scrapper.dto.ListLinksResponse;
 import backend.academy.linktracker.scrapper.dto.RemoveLinkRequest;
+import backend.academy.linktracker.scrapper.exception.LinkAlreadyExistsException;
 import backend.academy.linktracker.scrapper.repository.LinkRepository;
 import backend.academy.linktracker.scrapper.service.LinkApiService;
 import jakarta.validation.Valid;
@@ -38,9 +39,8 @@ public class LinksController {
     @PostMapping
     public ResponseEntity<LinkResponse> addLink(
             @RequestHeader("Tg-Chat-Id") long chatId, @Valid @RequestBody AddLinkRequest request) {
-
         if (linkRepository.findByChatAndUrl(chatId, request.getLink()).isPresent()) {
-            return ResponseEntity.status(409).build();
+            throw new LinkAlreadyExistsException(request.getLink());
         }
         return linkApiService
                 .addLink(chatId, request)
@@ -51,7 +51,6 @@ public class LinksController {
     @DeleteMapping
     public ResponseEntity<LinkResponse> removeLink(
             @RequestHeader("Tg-Chat-Id") long chatId, @Valid @RequestBody RemoveLinkRequest request) {
-
         return linkApiService
                 .removeLink(chatId, request)
                 .map(ResponseEntity::ok)

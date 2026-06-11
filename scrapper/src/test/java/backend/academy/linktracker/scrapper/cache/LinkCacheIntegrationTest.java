@@ -7,7 +7,7 @@ import backend.academy.linktracker.scrapper.dto.AddLinkRequest;
 import backend.academy.linktracker.scrapper.dto.RemoveLinkRequest;
 import backend.academy.linktracker.scrapper.repository.ChatRepository;
 import backend.academy.linktracker.scrapper.repository.LinkRepository;
-import backend.academy.linktracker.scrapper.service.LinkApiService;
+import backend.academy.linktracker.scrapper.service.LinkApiServiceImpl;
 import com.redis.testcontainers.RedisContainer;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -38,7 +38,7 @@ class LinkCacheIntegrationTest {
     }
 
     @Autowired
-    LinkApiService linkApiService;
+    LinkApiServiceImpl linkApiService;
 
     @Autowired
     ChatRepository chatRepository;

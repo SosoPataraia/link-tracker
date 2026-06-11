@@ -6,6 +6,9 @@ import backend.academy.linktracker.scrapper.properties.HttpClientProperties;
 import backend.academy.linktracker.scrapper.properties.StackoverflowProperties;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.io.HttpClientConnectionManager;
+import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.util.Timeout;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,13 +19,23 @@ import org.springframework.web.client.RestClient;
 public class ClientConfiguration {
 
     private HttpComponentsClientHttpRequestFactory requestFactory(HttpClientProperties props) {
-        var requestConfig = RequestConfig.custom()
-                .setConnectionRequestTimeout(Timeout.of(props.getConnectTimeout()))
-                .setResponseTimeout(Timeout.of(props.getReadTimeout()))
+        SocketConfig socketConfig = SocketConfig.custom()
+                .setSoTimeout(Timeout.of(props.getReadTimeout()))
                 .build();
 
-        var httpClient =
-                HttpClients.custom().setDefaultRequestConfig(requestConfig).build();
+        HttpClientConnectionManager connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
+                .setDefaultSocketConfig(socketConfig)
+                .build();
+
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectionRequestTimeout(Timeout.of(props.getConnectTimeout()))
+                .setConnectTimeout(Timeout.of(props.getConnectTimeout()))
+                .build();
+
+        var httpClient = HttpClients.custom()
+                .setConnectionManager(connectionManager)
+                .setDefaultRequestConfig(requestConfig)
+                .build();
 
         return new HttpComponentsClientHttpRequestFactory(httpClient);
     }

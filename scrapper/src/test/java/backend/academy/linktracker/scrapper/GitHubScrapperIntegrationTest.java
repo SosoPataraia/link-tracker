@@ -16,6 +16,7 @@ import backend.academy.linktracker.scrapper.model.TrackedLink;
 import backend.academy.linktracker.scrapper.repository.InMemoryLinkRepository;
 import backend.academy.linktracker.scrapper.sender.NotificationSender;
 import backend.academy.linktracker.scrapper.service.LinkCheckerService;
+import backend.academy.linktracker.scrapper.service.LinkCheckerServiceImpl;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import java.time.Instant;
 import java.util.List;
@@ -51,7 +52,7 @@ class GitHubScrapperIntegrationTest {
                 RestClient.builder().baseUrl(wireMock.baseUrl()).build());
         var soClient = new StackOverflowClientImpl(
                 RestClient.builder().baseUrl(wireMock.baseUrl()).build());
-        service = new LinkCheckerService(linkRepository, gitHubClient, soClient, notificationSender);
+        service = new LinkCheckerServiceImpl(linkRepository, gitHubClient, soClient, notificationSender);
     }
 
     @Test

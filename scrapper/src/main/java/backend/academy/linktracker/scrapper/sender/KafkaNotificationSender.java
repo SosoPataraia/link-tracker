@@ -22,7 +22,10 @@ public class KafkaNotificationSender implements NotificationSender {
                 .setTgChatIds(update.getTgChatIds())
                 .build();
 
-        log.info("Sending update via Kafka (Avro): url={} topic={}", update.getUrl(), topicName);
+        log.atInfo()
+                .addKeyValue("url", update.getUrl())
+                .addKeyValue("topic", topicName)
+                .log("notification.kafka.send");
         kafkaTemplate.send(topicName, String.valueOf(update.getId()), event);
     }
 }

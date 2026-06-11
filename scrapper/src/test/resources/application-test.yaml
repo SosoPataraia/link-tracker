@@ -34,8 +34,26 @@ resilience4j:
         failure-rate-threshold: 100
         wait-duration-in-open-state: 1s
         permitted-number-of-calls-in-half-open-state: 5
+      stackOverflowClient:
+        sliding-window-size: 5
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 100
+        wait-duration-in-open-state: 1s
+        permitted-number-of-calls-in-half-open-state: 5
+      botClient:
+        sliding-window-size: 5
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 100
+        wait-duration-in-open-state: 1s
+        permitted-number-of-calls-in-half-open-state: 5
   retry:
     instances:
       githubClient:
+        max-attempts: 3
+        wait-duration: 100ms
+      stackOverflowClient:
+        max-attempts: 3
+        wait-duration: 100ms
+      botClient:
         max-attempts: 3
         wait-duration: 100ms
